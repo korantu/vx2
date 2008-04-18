@@ -141,6 +141,7 @@ int main(int argc, char ** argv)
   main_module core;
 
   core.tw_gui.init();
+  core.volume.gui();
   if( ! core.volume.load("brainmask.mgh") )return -1;
   
   gl_init(&core);
@@ -153,6 +154,7 @@ int main(int argc, char ** argv)
     {
       core.draw();
       glfwSwapBuffers();
+      glfwSleep(0.02);
     }
 
   // Terminate AntTweakBar and GLFW

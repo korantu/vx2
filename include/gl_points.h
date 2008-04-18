@@ -18,7 +18,9 @@ GlPoints(): cursor(128,128,128){
 
   Loader loader;
   FastVolume vol;
-  float pnt;
+  double pnt;
+  double tw_pnt;
+  bool tw_pnt_smooth;
   V3f cursor;
   std::vector<int> list;
 
@@ -29,6 +31,8 @@ GlPoints(): cursor(128,128,128){
   bool save(char *);
   void draw();
   void point_size(float _pnt){pnt = _pnt;};
+
+  void gui();
 };
 
 

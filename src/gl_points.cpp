@@ -62,9 +62,18 @@ void GlPoints::draw(){
   glEnd();
 
 
-  //glPointSize(pnt);
-  glPointSize(1);
-  //glEnable(GL_POINT_SMOOTH);
+  //if(tw_pnt  0.5)
+  //  glPointSize(pnt);
+  //else
+  float nicety_coefficient = 1.5;
+
+  glPointSize(nicety_coefficient*tw_pnt*pnt);
+
+  if(tw_pnt_smooth)
+    glEnable(GL_POINT_SMOOTH);
+  else
+    glDisable(GL_POINT_SMOOTH);
+
   glEnable(GL_DEPTH_TEST);
   glBegin(GL_POINTS);
   int x, y, z;
@@ -109,6 +118,39 @@ void GlPoints::pick(int x, int y){
     };
   };
 };
+
+#include <AntTweakBar.h>
+
+  TwBar *points_bar;			// Pointer to a tweak bar
+
+
+void GlPoints::gui(){
+    tw_pnt=1.0;
+    tw_pnt_smooth=false;
+        
+    /// Create a tweak bar
+    points_bar = TwNewBar("Display");
+
+    ///building bars is a different business..
+     
+    TwDefine(" GLOBAL help='Voxelbrain Voxel editor.' "); // Message added to the help bar.
+
+
+    TwAddVarRW(points_bar, "", TW_TYPE_DOUBLE, &tw_pnt, " label='Point size' min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
+    TwAddVarRW(points_bar, "", TW_TYPE_BOOLCPP, &tw_pnt_smooth, " label='Smooth points' keyIncr=v keyDecr=V help='Size of the display points. ' ");
+
+    
+    TwAddSeparator(points_bar, "Position.", NULL);
+    TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &cursor.x, " label='X' help='Cursor X' ");
+    TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &cursor.y, " label='Y' help='Cursor Y' ");
+    TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &cursor.z, " label='Z' help='Cursor Z' ");
+
+};
+
+
+
+
+
 
 
 

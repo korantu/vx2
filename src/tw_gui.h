@@ -41,13 +41,13 @@ struct TwGui{
       }
 
 
-        
+    /*        
     /// Create a tweak bar
     bar = TwNewBar("Values");
 
     ///building bars is a different business..
      
-    TwDefine(" GLOBAL help='Voxelbrain Voxel editor. "); // Message added to the help bar.
+    TwDefine(" GLOBAL help='Voxelbrain Voxel editor.' "); // Message added to the help bar.
 
 
     // Add 'speed' to 'bar': it is a modifable (RW) variable of type TW_TYPE_DOUBLE. Its key shortcuts are [s] and [S].
@@ -56,6 +56,7 @@ struct TwGui{
     TwAddVarRW(bar, "wire", TW_TYPE_BOOL32, &wired, " label='Wireframe mode' key=w help='Toggle wireframe display mode.' ");
     // Add 'time' to 'bar': it is a read-only (RO) variable of type TW_TYPE_DOUBLE, with 1 precision digit
     TwAddVarRO(bar, "time", TW_TYPE_DOUBLE, &time, " label='Time' precision=1 help='Time (in seconds).' ");			
+    */
 #endif //USE_TW
     ///callbacks
 
