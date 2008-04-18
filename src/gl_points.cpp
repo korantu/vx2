@@ -48,7 +48,7 @@ void GlPoints::draw(){
 
   glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
   glGetDoublev( GL_PROJECTION_MATRIX, projection );
-  glGetIntegerv( GL_VIEWPORT, viewport );
+  glGetIntegerv( GL_VIEWPORT, (GLint *)viewport );
   
 
 
@@ -62,7 +62,9 @@ void GlPoints::draw(){
   glEnd();
 
 
-  glPointSize(pnt);
+  //glPointSize(pnt);
+  glPointSize(1);
+  //glEnable(GL_POINT_SMOOTH);
   glEnable(GL_DEPTH_TEST);
   glBegin(GL_POINTS);
   int x, y, z;
@@ -84,7 +86,7 @@ void GlPoints::draw(){
 void GlPoints::pick(int x, int y){
   double nx, ny, nz;
   double fx, fy, fz;
-  gluUnProject( x, y, -1, modelview, projection, viewport, &nx, &ny, &nz);
+  gluUnProject( x, y, -1, modelview, projection, (GLint *)viewport, &nx, &ny, &nz);
   gluUnProject( x, y, 1, modelview, projection, viewport, &fx, &fy, &fz);
   V3f near(nx, ny, nz);
   V3f far(fx, fy, fz);
@@ -107,6 +109,7 @@ void GlPoints::pick(int x, int y){
     };
   };
 };
+
 
 
 

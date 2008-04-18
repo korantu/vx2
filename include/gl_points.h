@@ -4,15 +4,16 @@
 #include "fastvolume.h"
 #include "loader.h"
 #include "v3tools.h"
+#include "glfw.h"  //TODO included only for GLint/GLdouble; try to remove
 
 struct GlPoints {
 
 GlPoints(): cursor(128,128,128){
   };
 
-  int viewport[4];
-  double modelview[16];
-  double projection[16];
+  GLint viewport[4];
+  GLdouble modelview[16];
+  GLdouble projection[16];
 
 
   Loader loader;
