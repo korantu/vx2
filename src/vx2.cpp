@@ -41,7 +41,13 @@
 //	Callback function called by GLFW when a mouse button is clicked
 struct main_module : public gl_wrapper_reciever {
 
+  bool render_required;
+
   TwGui tw_gui;
+
+  main_module(){
+    render_required = true;
+  };
 
   struct t_proj {
     double matrix[16];
@@ -79,11 +85,16 @@ struct main_module : public gl_wrapper_reciever {
 
   GlPoints volume;
 
-  bool load(char * in){ return volume.load("brainmask.mgh");  };
+  bool load(char * in){ 
+    render_required = true;
+    return volume.load("brainmask.mgh"); 
+  };
   
   void do_render(){
   };
+
   void do_resize(){
+    render_required = true;
     printf("resz: w:%d; h:%d\n", st.width, st.height);
   };
   void do_key(){
@@ -93,43 +104,51 @@ struct main_module : public gl_wrapper_reciever {
     if(st.m_b==2){ //change view
       float div = (st.width<st.height)?((float)st.width):((float)st.height);
       proj.rot(speed*(float)st.dy/div,speed*(float)st.dx/div);
+      render_required = true;
     };
     if(st.m_b==1){ //point something out
       volume.pick(st.x, st.height-st.y);
+      render_required = true;
     };
   };
+
   void do_wheel(){
   };
 
 
   void draw(){
-    //proj.rot(0.15, 0.092);
-    //printf("w%d:h%d\n", width, height);
-    tw_gui.resize(st.width, st.height);
-    glClearColor(1.0,1.0,1.0, 1.0);
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glViewport(0,0, st.width, st.height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    if(render_required == true || st.interface_updated == true){
+      //proj.rot(0.15, 0.092);
+      //printf("w%d:h%d\n", width, height);
+      tw_gui.resize(st.width, st.height);
+      glClearColor(1.0,1.0,1.0, 1.0);
+      glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+      glViewport(0,0, st.width, st.height);
+      glMatrixMode(GL_PROJECTION);
+      glLoadIdentity();
    
-    if(st.width>st.height){
-      glOrtho((-(float)st.width/(float)st.height), ((float)st.width/(float)st.height), -1, 1, -2, 2);
-      volume.point_size(1.5*((float)st.height)/(float)256);
-    }else{
-      glOrtho(-1, 1, (-(float)st.height/(float)st.width), ((float)st.height/(float)st.width), -2, 2);
-      volume.point_size(1.5*((float)st.width)/(float)256);
-    };
+      if(st.width>st.height){
+	glOrtho((-(float)st.width/(float)st.height), ((float)st.width/(float)st.height), -1, 1, -2, 2);
+	volume.point_size(1.5*((float)st.height)/(float)256);
+      }else{
+	glOrtho(-1, 1, (-(float)st.height/(float)st.width), ((float)st.height/(float)st.width), -2, 2);
+	volume.point_size(1.5*((float)st.width)/(float)256);
+      };
 
  
   
-    glMatrixMode(GL_MODELVIEW);
-    proj.loadmatrix();
-    // glLoadIdentity();
+      glMatrixMode(GL_MODELVIEW);
+      proj.loadmatrix();
+      // glLoadIdentity();
 
-    volume.draw();
+      volume.draw();
 	    
-    tw_gui.draw();
-    
+      tw_gui.draw();
+      render_required = false;
+      st.interface_updated = false;
+    }else{
+      //do nothing; 
+    };
   };
 };
 

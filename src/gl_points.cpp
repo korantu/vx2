@@ -4,6 +4,12 @@
 #include "v3tools.h"
 #include <string>
 
+void GlPoints::set_level(float l){
+  list.clear();;
+  printf("Really finding surface...%f\n", l);
+  vol.findSurface(list, (int )l); 
+};
+
 bool GlPoints::load(char * in){
   try{
     int cnt = loader.read(std::string(in));
@@ -11,7 +17,7 @@ bool GlPoints::load(char * in){
 
     loader.read_volume(vol);
 
-    vol.findSurface(list, 1); // TODO extract the surface... should be somewhere else;
+    set_level(1);
     printf("found %d points.\n", list.size());
   }catch(const Loader::Ex & err){
     printf("Problem occured: %s\n", err.reason.c_str());
@@ -90,7 +96,7 @@ void GlPoints::draw(){
 //TODO
 #define MAX2(a,b) (((a)>(b))?(a):(b))
 #define ABS(a) (MAX2((a),(-(a))))
-#define MAX3(a,b,c) MAX2(MAX2(a,b),c)
+#define MAX3(a,b,c) (MAX2(MAX2(a,b),c))
 
 void GlPoints::pick(int x, int y){
   double nx, ny, nz;
@@ -101,7 +107,7 @@ void GlPoints::pick(int x, int y){
   V3f far(fx, fy, fz);
   V3f dir(far); dir -= near;
   //we need to step maximum integer steps, to get into evry layer.
-  int steps = MAX3(ABS(near.x-far.x),ABS(near.y-far.y),ABS(near.z-far.z)); 
+  int steps = (int)MAX3(ABS(near.x-far.x),ABS(near.y-far.y),ABS(near.z-far.z)); 
   V3f step(dir); step /= steps;
   V3f cur(near); //start with near;
   for(int i = 0; i < steps; i++){
@@ -110,9 +116,10 @@ void GlPoints::pick(int x, int y){
        (cur.x < 256) && (cur.y < 256) && (cur.z < 255)){
       //inside the cube, let's check.
       int offset = vol.getOffset((int)cur.x, (int)cur.y, (int)cur.z);
-      if(vol.vol[offset] > 3){ //found
-	cursor = cur;
-	say("found",cursor);
+      if(vol.vol[offset] > tw_cursor_hit){ // hit condition tuned by gui
+	cursor = cur+step*tw_cursor_depth; // how deep below the surface we want our cursor to go.
+	tw_mri_value = (float)vol.vol[vol.getOffset((int)cursor.x, (int)cursor.y, (int)cursor.z)];
+	//say("found",cursor)
 	return;
       };
     };
@@ -122,6 +129,17 @@ void GlPoints::pick(int x, int y){
 #include <AntTweakBar.h>
 
   TwBar *points_bar;			// Pointer to a tweak bar
+
+int level = 3;
+void TW_CALL get_level(void * value, void * UserData){
+  //printf("getting level %f\n", (float)level);
+  (*((float *)value))=(float)level;
+};
+void TW_CALL set_level(const void * value, void * UserData){
+  level = *((float *)value);
+  printf("setting level %f\n", level);
+  ((GlPoints *)UserData)->set_level((float)level);
+};
 
 
 void GlPoints::gui(){
@@ -139,11 +157,20 @@ void GlPoints::gui(){
     TwAddVarRW(points_bar, "", TW_TYPE_DOUBLE, &tw_pnt, " label='Point size' min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
     TwAddVarRW(points_bar, "", TW_TYPE_BOOLCPP, &tw_pnt_smooth, " label='Smooth points' keyIncr=v keyDecr=V help='Size of the display points. ' ");
 
-    
+    //display cursor
     TwAddSeparator(points_bar, "Position.", NULL);
     TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &cursor.x, " label='X' help='Cursor X' ");
     TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &cursor.y, " label='Y' help='Cursor Y' ");
     TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &cursor.z, " label='Z' help='Cursor Z' ");
+    
+    //allow to change
+    TwAddSeparator(points_bar, "Operation.", NULL);
+    TwAddVarCB(points_bar, "", TW_TYPE_FLOAT, ::set_level, ::get_level, this, " min=-1 max=150 step=1 label='Isovalue'");
+    tw_cursor_hit = 3;
+    TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &tw_cursor_hit, "  min=2 max=150 step=1 label='Hit point' help='Point where the cursor considered to have hit the surface' ");
+    tw_cursor_depth = 0;
+    TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &tw_cursor_depth, " min=0 max=50 step=1 label='Cursor depth' help='How deep cursor goes after an impact.' ");
+    TwAddVarRO(points_bar, "", TW_TYPE_FLOAT, &tw_mri_value, " label='ValueAtCursor' help='MRI data value at the calcualtor.' ");
 
 };
 

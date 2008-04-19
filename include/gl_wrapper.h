@@ -20,6 +20,7 @@ struct gl_wrapper_reciever{
     int dw;
     int k;    //currently pressed key, if any
     int m_b;    //currently pressed m/b, if any
+    bool interface_updated;
   } st;
 
 

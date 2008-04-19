@@ -17,6 +17,7 @@ gl_wrapper_reciever::gl_wrapper_reciever(){
   st.dw = 0;
   st.k = 0;    //currently pressed key, if any
   st.m_b = 0;    //currently pressed m/b, if any
+  st.interface_updated = false;
 };
 
 ///universal callbacks definitions:
@@ -46,6 +47,11 @@ void move_wheel_callback(int pos){
 void press_key_callback(int key){
   rcv->st.k = key;
   rcv->do_key();
+};
+
+
+void invalidate(){
+  rcv->st.interface_updated = true;
 };
 
 /************
@@ -150,7 +156,9 @@ void GLFWCALL OnKey(int glfwButton, int glfwAction)
 
 	  press_key_callback(k); //report
 	};
-    };
+    }else{
+    invalidate();
+  };
 };
 
 //mouse button callback
@@ -175,7 +183,9 @@ void GLFWCALL OnMouseButton(int glfwButton, int glfwAction)
   };
 
   move_mouse_callback(cur_x, cur_y, m_b); //report
-    };
+    }else{
+    invalidate();
+  };
 };
 
 //mouse position callback
@@ -190,7 +200,9 @@ void GLFWCALL OnMousePos(int x, int y){
     {
       
       move_mouse_callback(x, y);
-    };
+    }else{
+    invalidate();
+  };
 };
 
 //mouse wheel callback
@@ -204,7 +216,9 @@ void GLFWCALL OnMouseWheel(int pos){
       )	// Send event to AntTweakBar
     {
       move_wheel_callback(pos);
-    };
+    }else{
+    invalidate();
+  };
 };
  
 void GLFWCALL WindowSizeCB(int w, int h){
@@ -213,6 +227,7 @@ void GLFWCALL WindowSizeCB(int w, int h){
     TwWindowSize(w, h);
 #endif
   resize_callback(w, h);
+    invalidate();
 };
 
 
