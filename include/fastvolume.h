@@ -56,6 +56,17 @@ class FastVolume {
   };
 
   static inline void iterate(Iterator &);
+
+  ///o - beginning of the slice
+  ///x,y - extent fo the slice
+  ///data[x*y] - slice storage
+
+  enum orientation{
+    XY, XZ, YZ
+  };
+
+  void slice(int x, int y, int z, int width, int height, orientation pos, char * data);
+  
 };
 
 
