@@ -2,6 +2,7 @@
 #define __fastvolume_h__
 
 #include <vector>
+#include "v3.h"
 
 /* 256x256x256 volume storage */
 class FastVolume {
@@ -56,6 +57,8 @@ class FastVolume {
   };
 
   static inline void iterate(Iterator &);
+  void raster( V3f o, V3f dx, V3f dy, int w, int h, unsigned char * buf);
+
 };
 
 

@@ -5,15 +5,15 @@ VX2 := navigator.o \
 	loader.o \
 	gl_points.o \
 	gl_wrapper.o \
-	gl_slicer.o \
+	slices.o \
 	vx2.o 
 
-VX2_SRC :=  ../../src/v3tools.cpp \
+VX2_SRC := ../../src/v3tools.cpp \
 	../../src/fastvolume.cpp \
 	../../src/loader.cpp \
 	../../src/gl_points.cpp \
 	../../src/gl_wrapper.cpp \
-	../../src/gl_slicer.cpp \
+	../../src/slices.cpp \
 	../../src/vx2.cpp 
 
 deps: $(VX2_SRC)

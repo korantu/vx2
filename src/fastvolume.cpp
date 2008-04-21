@@ -44,3 +44,34 @@ void FastVolume::iterate(Iterator & it){
       it.line(cur, max_cur);
     };
 };
+
+
+inline bool valid(int x, int y, int z){
+  return ((x < 256) && (y < 256) && (z < 256) && (x > 0) && (y > 0) && (z > 0)); 
+};
+
+/// slice an input buffer
+void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * buf){
+  int pos = 0;
+  V3i cur((int)o.x, (int)o.y, (int)o.z);     //integers should be seriously faster
+  V3i dx((int)_dx.x, (int)_dx.y, (int)_dx.z); 
+  V3i dy((int)_dy.x, (int)_dy.y, (int)_dy.z);
+  cur -= (dx*w/2);
+  cur -= (dy*h/2);
+  for(int y = 0; y < h; y++){
+    V3i line = cur;
+    for(int x = 0; x < w; x++){
+      if(valid(cur.x, cur.y, cur.z))
+	buf[pos] = vol[getOffset(line.x, line.y, line.z)];
+      else
+	buf[pos] = 0;
+      pos++;
+      line += dx;
+    };
+    cur += dy;
+  };
+};
+
+
+
+

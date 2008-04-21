@@ -36,14 +36,18 @@
 
 
 #include "v3tools.h"
+#include "slices.h"
+
 
 ///mouse button
-//	Callback function called by GLFW when a mouse button is clicked
+///	Callback function called by GLFW when a mouse button is clicked
 struct main_module : public gl_wrapper_reciever {
 
   bool render_required;
 
   TwGui tw_gui;
+
+  slices crossection;
 
   main_module(){
     render_required = true;
@@ -96,6 +100,8 @@ struct main_module : public gl_wrapper_reciever {
   void do_resize(){
     render_required = true;
     printf("resz: w:%d; h:%d\n", st.width, st.height);
+    crossection.resize_screen(st.width, st.height);
+    
   };
   void do_key(){
   };
@@ -121,8 +127,10 @@ struct main_module : public gl_wrapper_reciever {
       //proj.rot(0.15, 0.092);
       //printf("w%d:h%d\n", width, height);
       tw_gui.resize(st.width, st.height);
+
       glClearColor(1.0,1.0,1.0, 1.0);
-      glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+      glEnable(GL_DEPTH_TEST);
       glViewport(0,0, st.width, st.height);
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
@@ -142,8 +150,12 @@ struct main_module : public gl_wrapper_reciever {
       // glLoadIdentity();
 
       volume.draw();
-	    
+
+      crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1));
+      crossection.draw();
+
       tw_gui.draw();
+
       render_required = false;
       st.interface_updated = false;
     }else{
