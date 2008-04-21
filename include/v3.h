@@ -62,32 +62,6 @@ Basic misc definitions
                                            return *this;};  
       float dot(const V3 & a){ return x*a.x+y*a.y+z*a.z;};
 
-
-
-      inline T operator[](int i){
-	switch(i){
-	case 1:
-	  return x;
-	case 2:
-	  return y;
-	case 3:
-	  return z;
-	};
-      };
-      /*
-
-      T operator[]=(int i, T v){
-	switch(i){
-	1:
-	  return x = v;
-	2:
-	  return y = v;
-	3:
-	  return z = v;
-	}
-      };
-      */
-
     
     };
 

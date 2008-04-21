@@ -33,7 +33,7 @@
 
 #include "gl_wrapper.h"
 #include "gl_points.h"
-#include "gl_slicer.h"
+
 
 #include "v3tools.h"
 
@@ -44,7 +44,6 @@ struct main_module : public gl_wrapper_reciever {
   bool render_required;
 
   TwGui tw_gui;
-  GlSlicerI * slicer;
 
   main_module(){
     render_required = true;
@@ -160,45 +159,24 @@ int main(int argc, char ** argv)
 {
   main_module core;
 
-
   core.tw_gui.init();
   core.volume.gui();
   if( ! core.volume.load("brainmask.mgh") )return -1;
   
   gl_init(&core);
 
-  core.slicer = GlSlicerI::create(core.volume.vol);
-  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
   // Initialize time
   //  tw_gui.time = glfwGetTime();
   // Main loop (repeated while window is not closed and [ESC] is not pressed)
-  core.slicer->setup3dTexture();
-
-
   while( glfwGetWindowParam(GLFW_OPENED) && !glfwGetKey(GLFW_KEY_ESC) )
     {
-     
-       core.draw();
-       
-      //experiment:
-      glBegin(GL_QUADS);
-      glTexCoord3d(100,0,0);
-      glVertex3d(0,0,0);
-      glTexCoord3d(100,100,0);
-      glVertex3d(0,100,0);
-      glTexCoord3d(100,100,100);
-      glVertex3d(0,100,100);
-      glTexCoord3d(100,0,100);
-      glVertex3d(0,0,100);
-      glEnd();
-
+      core.draw();
       glfwSwapBuffers();
       glfwSleep(0.02);
     }
 
   // Terminate AntTweakBar and GLFW
-  delete core.slicer;
   glfwTerminate();
   core.tw_gui.stop();
   
