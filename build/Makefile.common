@@ -23,11 +23,20 @@ vx2: $(VX2)
 	$(CXX) $(VX2) $(LINKFLAGS) -o vx2
 
 
-.PHONY: clean
+.PHONY: clean 
 clean:
-	rm *.o  
+	rm *.o
+
+tags:
+	find ../.. -name *.h -or -name *.cpp -or -name *.c | xargs etags -e
+  
 
 #objects
 %.o: ../../src/%.cpp
 	$(CXX) -c $< $(CXXFLAGS) -o $@  
+
+
+
+
+
 
