@@ -3,6 +3,7 @@
 #include "v3.h"
 #include "v3tools.h"
 #include <string>
+#include "misc.h"
 
 void GlPoints::set_level(float l){
   list.clear();;
@@ -93,10 +94,6 @@ void GlPoints::draw(){
   
 };
 
-//TODO
-#define MAX2(a,b) (((a)>(b))?(a):(b))
-#define ABS(a) (MAX2((a),(-(a))))
-#define MAX3(a,b,c) (MAX2(MAX2(a,b),c))
 
 void GlPoints::pick(int x, int y){
   double nx, ny, nz;
