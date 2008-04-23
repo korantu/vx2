@@ -38,6 +38,8 @@
 #include "v3tools.h"
 #include "slices.h"
 
+#include "misc.h"
+
 
 ///mouse button
 ///	Callback function called by GLFW when a mouse button is clicked
@@ -48,6 +50,10 @@ struct main_module : public gl_wrapper_reciever {
   TwGui tw_gui;
 
   slices crossection;
+
+
+  GlPoints volume;
+
 
   main_module(){
     render_required = true;
@@ -87,8 +93,6 @@ struct main_module : public gl_wrapper_reciever {
     };
   } proj;
 
-  GlPoints volume;
-
   bool load(char * in){ 
     render_required = true;
     return volume.load("brainmask.mgh"); 
@@ -113,7 +117,27 @@ struct main_module : public gl_wrapper_reciever {
       render_required = true;
     };
     if(st.m_b==1){ //point something out
-      volume.pick(st.x, st.height-st.y);
+      ///trying to pick crossection
+      V3f res;
+      bool picked = crossection.pick(st.x, st.y, res);
+      if(picked){
+	volume.cursor = res;
+      }else{
+	volume.pick(st.x, st.height-st.y);
+
+	crossection.tiles_coverage(1.0, 0.25);
+
+      //choosing best normal
+	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
+		 
+		   printf("XX\n"),printf("YY\n"),printf("ZZ\n"));
+	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
+		   crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1)),
+		   crossection.update(volume.vol, volume.cursor, V3f(0,1,0), V3f(1,0,0), V3f(0,0,1)),
+		   crossection.update(volume.vol, volume.cursor, V3f(0,0,1), V3f(0,1,0), V3f(1,0,0)));
+	;
+
+      };
       render_required = true;
     };
   };
@@ -151,7 +175,6 @@ struct main_module : public gl_wrapper_reciever {
 
       volume.draw();
 
-      crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1));
       crossection.draw();
 
       tw_gui.draw();
@@ -194,6 +217,9 @@ int main(int argc, char ** argv)
   
   return 0;
 };
+
+
+
 
 
 
