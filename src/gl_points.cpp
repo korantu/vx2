@@ -94,6 +94,10 @@ void GlPoints::draw(){
   
 };
 
+void GlPoints::set_cursor(V3f c){
+  cursor = c;
+  tw_mri_value = (float)vol.vol[vol.getOffset((int)cursor.x, (int)cursor.y, (int)cursor.z)];
+};
 
 void GlPoints::pick(int x, int y){
   double nx, ny, nz;
@@ -114,8 +118,7 @@ void GlPoints::pick(int x, int y){
       //inside the cube, let's check.
       int offset = vol.getOffset((int)cur.x, (int)cur.y, (int)cur.z);
       if(vol.vol[offset] > tw_cursor_hit){ // hit condition tuned by gui
-	cursor = cur+step*tw_cursor_depth; // how deep below the surface we want our cursor to go.
-	tw_mri_value = (float)vol.vol[vol.getOffset((int)cursor.x, (int)cursor.y, (int)cursor.z)];
+	set_cursor(cur+step*tw_cursor_depth); // how deep below the surface we want our cursor to go.
 	//say("found",cursor)
 	return;
       };

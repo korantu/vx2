@@ -39,6 +39,9 @@ GlPoints(): cursor(128,128,128){
   void draw();
   void point_size(float _pnt){pnt = _pnt;};
 
+  void set_cursor(V3f);
+
+
   void gui();
 };
 

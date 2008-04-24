@@ -4,9 +4,10 @@
 #include "slices.h"
 #include "fastvolume.h"
 #include "v3.h"
+#include "gl_points.h"
+#include "misc.h"
 
 struct slices{
-  
 
   struct slice{
     unsigned char * data;
@@ -22,8 +23,16 @@ struct slices{
   V3f dz;
 
   bool pick(int x, int y, V3f & res);
+  bool locate(V3f pos, int &x, int &y);
 
   typedef slice (* slicep); 
+
+  
+  GlPoints * pnts;
+
+  int zoom;
+
+  int scheme;
 
   int x_orig, y_orig;  //where zero tile starts;
   int xn, yn;          //number of tiles that fit on the screen;
@@ -34,8 +43,12 @@ struct slices{
   float area_x, area_y; // percentage of area we want covered.
   int xn_toshow;
   int yn_toshow;
-  
+  bool update_needed;
+
+
   void update(FastVolume & in, V3f _center, V3f _dx, V3f _dy, V3f _dz);
+  void update(FastVolume & in);
+  void update(){update_needed = true;};
   void draw();
   void setup_projection();
   void resize_all(int _width, int _height, int _tile_w, int _tile_h);
@@ -45,8 +58,11 @@ struct slices{
   void allocate_store(int _width, int _height, int _tile_w, int _tile_h);
   void free_store();
 
-  slices(int _width, int _height, int _tile_w, int _tile_h);
-  slices();
+  void gui();
+  
+
+  slices(GlPoints * _p, int _width, int _height, int _tile_w, int _tile_h);
+  slices(GlPoints * _p);
   ~slices();
 };
 

@@ -6,6 +6,7 @@ VX2 := navigator.o \
 	gl_points.o \
 	gl_wrapper.o \
 	slices.o \
+	color.o \
 	vx2.o 
 
 VX2_SRC := ../../src/v3tools.cpp \
@@ -14,6 +15,7 @@ VX2_SRC := ../../src/v3tools.cpp \
 	../../src/gl_points.cpp \
 	../../src/gl_wrapper.cpp \
 	../../src/slices.cpp \
+	../../src/color.cpp \
 	../../src/vx2.cpp 
 
 deps: $(VX2_SRC)

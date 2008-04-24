@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "v3.h"
+#include "color.h"
 
 /* 256x256x256 volume storage */
 class FastVolume {
@@ -17,6 +18,10 @@ class FastVolume {
  /* Main storage; won't fit on stack */
   t_vox * vol;
 
+  ///markers
+  std::vector<int> markers;
+  unsigned char * mask;
+
   /* Cubic arrangement makes for efficient lookup */
   static const int dx = 0x01;
   static const int dy = 0xff;
@@ -24,6 +29,8 @@ class FastVolume {
 
   static const int dim = 0x100;
   static const int max = dim*dim*dim;
+
+  static const int n_voxels = dim*dim*dim;
 
   //static const int neighbours[6] = {dx, -dx, dy, -dy, dz, -dz};
 
@@ -51,13 +58,16 @@ class FastVolume {
 
   /* Derive this class for different purposes; and use different iterator methods*/
   class Iterator {
+
   public:
     /* Iterate a line; calling for every point is too expensive */
     virtual void line(int start, int finish) = 0;
+
   };
 
+  //center, dx, dy, pixel/width/height, buffer, zoom (default = 1) 
   static inline void iterate(Iterator &);
-  void raster( V3f o, V3f dx, V3f dy, int w, int h, unsigned char * buf);
+  void raster( V3f o, V3f dx, V3f dy, int w, int h, unsigned char * buf, ColorMapper & mapper, int zoom = 1);
 
 };
 

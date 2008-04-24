@@ -55,7 +55,7 @@ struct main_module : public gl_wrapper_reciever {
   GlPoints volume;
 
 
-  main_module(){
+  main_module():crossection(& volume){
     render_required = true;
   };
 
@@ -105,10 +105,13 @@ struct main_module : public gl_wrapper_reciever {
     render_required = true;
     printf("resz: w:%d; h:%d\n", st.width, st.height);
     crossection.resize_screen(st.width, st.height);
+    //  crossection.tiles_coverage(0.25, 1.0);
+    crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1));
     
   };
   void do_key(){
   };
+
   void do_mouse(){
     float speed = 4;
     if(st.m_b==2){ //change view
@@ -119,13 +122,14 @@ struct main_module : public gl_wrapper_reciever {
     if(st.m_b==1){ //point something out
       ///trying to pick crossection
       V3f res;
+      //  crossection.tiles_coverage(0.25, 1.0);
+      //      crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1)),
       bool picked = crossection.pick(st.x, st.y, res);
       if(picked){
-	volume.cursor = res;
+	volume.set_cursor(res);
       }else{
 	volume.pick(st.x, st.height-st.y);
 
-	crossection.tiles_coverage(1.0, 0.25);
 
       //choosing best normal
 	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
@@ -175,6 +179,8 @@ struct main_module : public gl_wrapper_reciever {
 
       volume.draw();
 
+      if(crossection.update_needed)
+	crossection.update(volume.vol);
       crossection.draw();
 
       tw_gui.draw();
@@ -196,8 +202,11 @@ int main(int argc, char ** argv)
 
   core.tw_gui.init();
   core.volume.gui();
+  core.crossection.gui();
+
   if( ! core.volume.load("brainmask.mgh") )return -1;
   
+    
   gl_init(&core);
 
 
