@@ -4,6 +4,8 @@
 #include "v3tools.h"
 #include <string>
 #include "misc.h"
+#include "native.h"
+
 
 void GlPoints::set_level(float l){
   list.clear();;
@@ -11,7 +13,7 @@ void GlPoints::set_level(float l){
   vol.findSurface(list, (int )l); 
 };
 
-bool GlPoints::load(char * in){
+bool GlPoints::load(const char * in){
   try{
     int cnt = loader.read(std::string(in));
     printf("Read %d bytes.\n", cnt);
@@ -27,7 +29,7 @@ bool GlPoints::load(char * in){
   return true;
 };
 
-bool GlPoints::save(char * out){
+bool GlPoints::save(const char * out){
   try {
     loader.write_volume(vol); //save data from volume into the loader
     loader.write(std::string(out));
@@ -141,6 +143,15 @@ void TW_CALL set_level(const void * value, void * UserData){
   ((GlPoints *)UserData)->set_level((float)level);
 };
 
+void TW_CALL load_file( void * UserData){
+  printf("Trying to load a file.\n");
+  std::string in = getFile();
+  if(in.length() > 0){
+    printf("indeed, got %s\n", in.c_str());
+    ((GlPoints *)UserData)->load(in.c_str());
+  };
+};
+
 
 void GlPoints::gui(){
     tw_pnt=1.0;
@@ -171,6 +182,8 @@ void GlPoints::gui(){
     tw_cursor_depth = 0;
     TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &tw_cursor_depth, " min=0 max=50 step=1 label='Cursor depth' help='How deep cursor goes after an impact.' ");
     TwAddVarRO(points_bar, "", TW_TYPE_FLOAT, &tw_mri_value, " label='ValueAtCursor' help='MRI data value at the calcualtor.' ");
+    TwAddSeparator(points_bar, "File.", NULL);
+    TwAddButton(points_bar, "", load_file, this, "label='Load'");
 
 };
 

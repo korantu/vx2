@@ -100,7 +100,7 @@ int Loader::read(std::string name){
     };
   ::close(fd);  
 
-  res = new char[total];
+  if(!res) res = new char[total];
   if(!res) throw Ex("Unable to create buffer");
   
   //copying the collection into the buffer; the buffer will be used for 

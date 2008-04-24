@@ -34,8 +34,8 @@ GlPoints(): cursor(128,128,128){
 
   void findSurface(int n);
 
-  bool load(char *);
-  bool save(char *);
+  bool load(const char *);
+  bool save(const char *);
   void draw();
   void point_size(float _pnt){pnt = _pnt;};
 
