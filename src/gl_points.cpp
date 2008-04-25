@@ -98,7 +98,10 @@ void GlPoints::draw(){
 
 void GlPoints::set_cursor(V3f c){
   cursor = c;
-  tw_mri_value = (float)vol.vol[vol.getOffset((int)cursor.x, (int)cursor.y, (int)cursor.z)];
+  int idx = vol.getOffset((int)cursor.x, (int)cursor.y, (int)cursor.z);
+  tw_mri_value = (float)vol.vol[idx];
+  vol.mask[idx]=255;
+  vol.markers.push_back(idx);
 };
 
 void GlPoints::pick(int x, int y){
@@ -133,6 +136,9 @@ void GlPoints::pick(int x, int y){
   TwBar *points_bar;			// Pointer to a tweak bar
 
 int level = 3;
+int threshold = 3;
+int generation = 3;
+
 void TW_CALL get_level(void * value, void * UserData){
   //printf("getting level %f\n", (float)level);
   (*((float *)value))=(float)level;
@@ -161,6 +167,15 @@ void TW_CALL save_file( void * UserData){
     ((GlPoints *)UserData)->save(in.c_str());
   };
 };
+
+void TW_CALL step( void * UserData){
+  ((GlPoints *)UserData)->vol.propagate(threshold, generation);
+  ((GlPoints *)UserData)->vol.updated = true;
+
+  generation %= 100; generation ++; 
+};
+
+
 
 void GlPoints::gui(){
     tw_pnt=1.0;
@@ -191,6 +206,10 @@ void GlPoints::gui(){
     tw_cursor_depth = 0;
     TwAddVarRW(points_bar, "", TW_TYPE_FLOAT, &tw_cursor_depth, " min=0 max=50 step=1 label='Cursor depth' help='How deep cursor goes after an impact.' ");
     TwAddVarRO(points_bar, "", TW_TYPE_FLOAT, &tw_mri_value, " label='ValueAtCursor' help='MRI data value at the calcualtor.' ");
+    TwAddSeparator(points_bar, "Editing.", NULL);
+    TwAddVarRW(points_bar, "", TW_TYPE_INT32, &tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
+    TwAddVarRW(points_bar, "", TW_TYPE_INT32, &threshold, " min=3 max=100 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
+    TwAddButton(points_bar, "", step, this, "label='Step' key='g'");
     TwAddSeparator(points_bar, "File.", NULL);
     TwAddButton(points_bar, "", load_file, this, "label='Load'");
     TwAddButton(points_bar, "", save_file, this, "label='Save'");

@@ -8,6 +8,8 @@
 /* 256x256x256 volume storage */
 class FastVolume {
  public:  
+
+  bool updated;
   /* Storage item */
   typedef short int t_vox; 
   

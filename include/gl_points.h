@@ -8,13 +8,15 @@
 
 struct GlPoints {
 
-GlPoints(): cursor(128,128,128){
+GlPoints(): cursor(128,128,128), tool(0) {
   };
 
   GLint viewport[4];
   GLdouble modelview[16];
   GLdouble projection[16];
 
+
+  int tool;
 
   Loader loader;
   FastVolume vol;
@@ -40,7 +42,6 @@ GlPoints(): cursor(128,128,128){
   void point_size(float _pnt){pnt = _pnt;};
 
   void set_cursor(V3f);
-
 
   void gui();
 };

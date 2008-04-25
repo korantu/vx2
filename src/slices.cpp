@@ -164,7 +164,7 @@ void slices::update(FastVolume & in, V3f _center, V3f _dx, V3f _dy, V3f _dz){
   
   dx = _dx; dy = _dy; dz=_dz; center=_center;
   
-  V3f c(_center); c -= (_dz*((xn_toshow*yn_toshow)/2));
+  V3f c(_center); c -= (_dz*((xn_toshow*yn_toshow)/2+1));
   for(int y = 0 ; y < yn_toshow; y++)
     for(int x = 0; x < xn_toshow; x++){
       c+=_dz;

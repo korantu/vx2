@@ -157,8 +157,8 @@ void GLFWCALL OnKey(int glfwButton, int glfwAction)
 	  press_key_callback(k); //report
 	};
     }else{
-    invalidate();
   };
+    invalidate();
 };
 
 //mouse button callback

@@ -127,6 +127,7 @@ struct main_module : public gl_wrapper_reciever {
       bool picked = crossection.pick(st.x, st.y, res);
       if(picked){
 	volume.set_cursor(res);
+	if(volume.tool == 1)crossection.update();
       }else{
 	volume.pick(st.x, st.height-st.y);
 
@@ -152,6 +153,21 @@ struct main_module : public gl_wrapper_reciever {
 
   void draw(){
     if(render_required == true || st.interface_updated == true){
+      //
+      if(volume.vol.updated){
+	volume.vol.updated = false;
+
+      //choosing best normal
+	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
+		 
+		   printf("XX\n"),printf("YY\n"),printf("ZZ\n"));
+	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
+		   crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1)),
+		   crossection.update(volume.vol, volume.cursor, V3f(0,1,0), V3f(1,0,0), V3f(0,0,1)),
+		   crossection.update(volume.vol, volume.cursor, V3f(0,0,1), V3f(0,1,0), V3f(1,0,0)));
+	;
+      };
+      
       //proj.rot(0.15, 0.092);
       //printf("w%d:h%d\n", width, height);
       tw_gui.resize(st.width, st.height);
