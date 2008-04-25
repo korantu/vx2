@@ -1,35 +1,5 @@
 #include "loader.h"
-#include "zlib.h"
-
-
-/***
-    Structure for dealing with compression
- ***/
-struct compressor{
-  static const int BUF_SIZE=16384;
-  char buf [BUF_SIZE]; //for reading from the file
-  char buf_out [BUF_SIZE]; //for compressing/decompressing.
-  int cnt;
-  z_stream strm; //gz stream.
-
-  compressor(){
-    /*Setup gzip stream*/
-    strm.zalloc = Z_NULL;
-    //strm.free = Z_NULL;
-    strm.opaque = Z_NULL;
-    strm.avail_in = 0;
-    strm.next_in = Z_NULL;
-    if(inflateInit(&strm) != Z_OK)throw "Compressor initialization failed.";
-  };
-
-  std::string compress(char * _buf, int sz){
-    return std::string(_buf, sz);
-  };
-  
-  std::string decompress( std::string in){
-    return in;
-  };
-};
+#include <zlib.h>
 
 //_* Exception handling
 Loader::Ex::Ex(std::string why): reason(why){};
@@ -50,94 +20,67 @@ Loader::~Loader(){
   if(res != NULL)delete[] res; //Free memory
 };
 
+
+
 //_ * Read-write
 int Loader::read(std::string name){
-  int fd = 0; //file descriptor
+
+  gzFile fd; //file descriptor
 
   const int BUF_SIZE=16384;
   char buf [BUF_SIZE]; //for reading from the file
   
-  //compression tool
-  compressor gzip;
+  std::string contents; //vector of strings, to be composed later into one vec.
 
-  std::vector<std::string> contents; //vector of strings, to be composed later into one vec.
-  fd = open(name.c_str(), O_RDONLY);
-  if(fd < 0) throw Ex("Cannot open file"); //cannot read file.
+  fd = gzopen(name.c_str(),"ro");
+  if(fd == NULL) throw Ex("Cannot open file"); //cannot read file.
   
   //reading
 
-  total = 0;
   
-  //Reading from file and collecting the strings
-  
-  int cnt = 0; 
+  int cnt = 0;
 
-  while(cnt = ::read(fd, (void *) buf, BUF_SIZE))
-    {
-      /*
-      if(cnt == -1) {
-	inflateEnd(&strm);
-	throw Ex("Read error");
-      };
-      //preparing the stream
-      strm.avail_in = cnt;
-      strm.next_in = (Bytef *)buf;
-      
-      do{
-	strm.avail_out = BUF_SIZE;
-	strm.next_out = (Bytef *)buf_out;
-	int ret = inflate(&strm, Z_NO_FLUSH);
-	if(ret == Z_STREAM_ERROR)throw Ex("Z_STREAM_ERROR.");
-	int chunk_size = BUF_SIZE-strm.avail_out;
-	contents.push_back(std::string((char *)strm.next_out, chunk_size)); //push current chunk
-	total += chunk_size;
-      }while(strm.avail_out == 0); //loop while the buffer fills completely; oterwise, get more input.
-      */
-      std::string decompressed_chunk = gzip.compress(buf, cnt);
-      total += decompressed_chunk.size();
-      
-      contents.push_back(decompressed_chunk);
-    };
-  ::close(fd);  
+  while(cnt = gzread(fd, (void *) buf, BUF_SIZE)){
+	contents+=std::string((char *)buf, cnt);
+  };
+  ::gzclose(fd);  
 
-  if(!res) res = new char[total];
+  if(!res) delete[] res; //just in case the size is different.
+  res = new char[contents.size()];
   if(!res) throw Ex("Unable to create buffer");
   
   //copying the collection into the buffer; the buffer will be used for 
   // further manipulation - storing, writing.
-  int cur = 0;
-  for(std::vector<std::string>::iterator i = contents.begin(); i != contents.end(); i++)
-    {
-      memcpy((void *)&(res[cur]), (void *)(*i).c_str(), (*i).size());
-      cur+=(*i).size();
-    };
-  
-  printf("Acqured %d bytes.\n", total);
-  return total;  
+  total = contents.size();
+  memcpy((void *)(res), contents.c_str(), contents.size()); 
+  printf("Acqured %d bytes.\n", contents.size());
+  return contents.size();  
 };
 
 int Loader::write(std::string name){
 
   printf("file %s\n",  name.c_str());
-  
+  /* 
   int fd = open(name.c_str(), O_WRONLY | O_CREAT, 
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 
   //trying opening existing file
   if(fd < 0) fd = open(name.c_str(), O_WRONLY | O_TRUNC, 
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+  */
 
+  gzFile fd = gzopen(name.c_str(), "wb");
   //still cannot - fail:
-  if(fd < 0) throw Ex("Cannot open file"); //cannot read file.
+  if(fd == NULL) throw Ex("Cannot open file"); //cannot read file.
   
-  int cnt = ::write(fd, res, total);
-
+  int cnt = gzwrite(fd, res, total);
+  gzflush(fd, Z_FINISH);
   if(cnt != total){
-    close(fd);
+    gzclose(fd);
     throw Ex("Writing failed.");
   };
 
-  close(fd);
+  gzclose(fd);
 
   return total;
 };

@@ -153,6 +153,15 @@ void TW_CALL load_file( void * UserData){
 };
 
 
+void TW_CALL save_file( void * UserData){
+  printf("Trying to load a file.\n");
+  std::string in = putFile();
+  if(in.length() > 0){
+    printf("indeed, got %s to save in.\n", in.c_str());
+    ((GlPoints *)UserData)->save(in.c_str());
+  };
+};
+
 void GlPoints::gui(){
     tw_pnt=1.0;
     tw_pnt_smooth=false;
@@ -184,6 +193,7 @@ void GlPoints::gui(){
     TwAddVarRO(points_bar, "", TW_TYPE_FLOAT, &tw_mri_value, " label='ValueAtCursor' help='MRI data value at the calcualtor.' ");
     TwAddSeparator(points_bar, "File.", NULL);
     TwAddButton(points_bar, "", load_file, this, "label='Load'");
+    TwAddButton(points_bar, "", save_file, this, "label='Save'");
 
 };
 

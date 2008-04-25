@@ -204,7 +204,7 @@ int main(int argc, char ** argv)
   core.volume.gui();
   core.crossection.gui();
 
-  if( ! core.volume.load("brainmask.mgh") )return -1;
+  if( ! core.volume.load("brainmask.mgz") )return -1;
   
     
   gl_init(&core);

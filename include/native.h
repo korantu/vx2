@@ -4,5 +4,6 @@
 #include <string>
 
 std::string getFile();
+std::string putFile();
 
 #endif

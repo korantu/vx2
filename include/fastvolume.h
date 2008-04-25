@@ -21,6 +21,8 @@ class FastVolume {
   ///markers
   std::vector<int> markers;
   unsigned char * mask;
+  void add_point(V3f &in);
+  void propagate(int threshold, int generation);
 
   /* Cubic arrangement makes for efficient lookup */
   static const int dx = 0x01;
@@ -32,7 +34,7 @@ class FastVolume {
 
   static const int n_voxels = dim*dim*dim;
 
-  //static const int neighbours[6] = {dx, -dx, dy, -dy, dz, -dz};
+  static const int neighbours[6];// = {dx, -dx, dy, -dy, dz, -dz};
 
   /* Calculate offset from separate coords */
   static inline int getOffset(int x, int y, int z){
