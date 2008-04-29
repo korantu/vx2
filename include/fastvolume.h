@@ -23,13 +23,14 @@ class FastVolume {
   ///markers
   std::vector<int> markers;
   unsigned char * mask;
+  unsigned char * depth;
   void add_point(V3f &in);
-  void propagate(int threshold, int generation);
+  void propagate(int threshold, int generation, int amount);
 
   /* Cubic arrangement makes for efficient lookup */
   static const int dx = 0x01;
-  static const int dy = 0xff;
-  static const int dz = 0xffff;
+  static const int dy = 0x100;
+  static const int dz = 0x10000;
 
   static const int dim = 0x100;
   static const int max = dim*dim*dim;
@@ -54,6 +55,11 @@ class FastVolume {
      Takes a volume of x*y*z array and loads it into the 256*256*256 volume */
   void copy(t_vox * , int x, int y, int z);
 
+  /// resets all the buffers
+  void reset();
+
+  /// makes sure mask buffer corresponds to the marker buffer; i.e. all neigbouring points are included.
+  void reseed();
 
   /* Find all points neighbouring an outside;
    space: max. value still considered outside the area of interest.

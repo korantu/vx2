@@ -27,6 +27,8 @@
 #include "glfw.h"
 #include "tw_gui.h"
 
+#include "gui.h"
+
 #include "v3.h"
 
 #include <stdio.h>
@@ -47,7 +49,7 @@ struct main_module : public gl_wrapper_reciever {
 
   bool render_required;
 
-  TwGui tw_gui;
+  // TwGui tw_gui;
 
   slices crossection;
 
@@ -115,10 +117,22 @@ struct main_module : public gl_wrapper_reciever {
   void do_mouse(){
     float speed = 4;
     if(st.m_b==2){ //change view
-      float div = (st.width<st.height)?((float)st.width):((float)st.height);
-      proj.rot(speed*(float)st.dy/div,speed*(float)st.dx/div);
+      ///trying to pick crossection
+      V3f res;
+      //  crossection.tiles_coverage(0.25, 1.0);
+      //      crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1)),
+      bool picked = crossection.pick(st.x, st.y, res);
+      if(picked){
+	volume.set_cursor(res);
+	printf("Picked...%f %f %f\n", res.x, res.y, res.z);
+	crossection.center = res;
+	crossection.update();
+      }else{
+	float div = (st.width<st.height)?((float)st.width):((float)st.height);
+	proj.rot(speed*(float)st.dy/div,speed*(float)st.dx/div);
+      };
       render_required = true;
-    };
+    }
     if(st.m_b==1){ //point something out
       ///trying to pick crossection
       V3f res;
@@ -170,7 +184,7 @@ struct main_module : public gl_wrapper_reciever {
       
       //proj.rot(0.15, 0.092);
       //printf("w%d:h%d\n", width, height);
-      tw_gui.resize(st.width, st.height);
+      gui_resize(st.width, st.height);
 
       glClearColor(1.0,1.0,1.0, 1.0);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -199,7 +213,7 @@ struct main_module : public gl_wrapper_reciever {
 	crossection.update(volume.vol);
       crossection.draw();
 
-      tw_gui.draw();
+      gui_draw();
 
       render_required = false;
       st.interface_updated = false;
@@ -215,10 +229,13 @@ struct main_module : public gl_wrapper_reciever {
 int main(int argc, char ** argv) 
 {
   main_module core;
-
-  core.tw_gui.init();
-  core.volume.gui();
-  core.crossection.gui();
+ 
+  //core.tw_gui.init();
+ 
+  /* TwBar * bar = TwNewBar("Options");
+  TwDefine("Options size='200 600'");
+  */
+  gui_start( &core.crossection, &core.volume);
 
   if( ! core.volume.load("brainmask.mgz") )return -1;
   
@@ -238,7 +255,9 @@ int main(int argc, char ** argv)
 
   // Terminate AntTweakBar and GLFW
   glfwTerminate();
-  core.tw_gui.stop();
+
+  gui_stop();
+  //core.tw_gui.stop();
   
   return 0;
 };

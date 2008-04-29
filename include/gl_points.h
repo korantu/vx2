@@ -6,6 +6,8 @@
 #include "v3tools.h"
 #include "glfw.h"  //TODO included only for GLint/GLdouble; try to remove
 
+#include <AntTweakBar.h>
+
 struct GlPoints {
 
 GlPoints(): cursor(128,128,128), tool(0) {
@@ -43,7 +45,7 @@ GlPoints(): cursor(128,128,128), tool(0) {
 
   void set_cursor(V3f);
 
-  void gui();
+  void gui(TwBar *);
 };
 
 

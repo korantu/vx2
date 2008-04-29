@@ -7,6 +7,8 @@
 #include "gl_points.h"
 #include "misc.h"
 
+#include <AntTweakBar.h>
+
 struct slices{
 
   struct slice{
@@ -58,7 +60,7 @@ struct slices{
   void allocate_store(int _width, int _height, int _tile_w, int _tile_h);
   void free_store();
 
-  void gui();
+  void gui(TwBar *);
   
 
   slices(GlPoints * _p, int _width, int _height, int _tile_w, int _tile_h);

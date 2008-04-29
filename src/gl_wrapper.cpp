@@ -100,7 +100,7 @@ void glfw_init_window(){
   // Create a window
   GLFWvidmode mode; 	// GLFW video mode
   glfwGetDesktopMode(&mode);
-  if( !glfwOpenWindow(640, 480, mode.RedBits, mode.GreenBits, mode.BlueBits, 0, 16, 0, GLFW_WINDOW /* or GLFW_FULLSCREEN */) )
+  if( !glfwOpenWindow(1300, 1000, mode.RedBits, mode.GreenBits, mode.BlueBits, 0, 16, 0, GLFW_WINDOW /* or GLFW_FULLSCREEN */) )
     {
       // A fatal error occured	
       fprintf(stderr, "Cannot open GLFW window\n");

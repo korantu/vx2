@@ -6,12 +6,43 @@
 #include "misc.h"
 #include "native.h"
 
+void generateDepthMap(FastVolume * in, std::vector<int> & list);
 
 void GlPoints::set_level(float l){
-  list.clear();;
+  list.clear();
   printf("Really finding surface...%f\n", l);
   vol.findSurface(list, (int )l); 
+  generateDepthMap(&vol, list);
 };
+
+void generateDepthMap(FastVolume * in, std::vector<int> & list){
+
+  for(int i = 0 ; i < in->max; i++)in->depth[i]=254;
+
+  int cur_depth = 1;
+  std::vector<int> cur;
+  //cur.push_back(in->getOffset(100,100,100));
+  in->findSurface(cur, 0);
+
+  std::vector<int> scratch;
+  while(cur_depth < 15){
+    for( std::vector<int>::iterator i = cur.begin(); i != cur.end(); i++)
+      {
+	int cur_idx = *i;
+	if((in->depth[cur_idx]> cur_depth) && (in->vol[cur_idx]!=0) ){
+	  in->depth[cur_idx] = cur_depth;
+	  for(int i = 0; i < 6; i++){
+	    scratch.push_back(cur_idx+in->neighbours[i]); //schedule for lookaround;
+	  };
+	};
+	
+      };
+    cur_depth++;    //next iteration
+    cur = scratch;
+    scratch.clear();
+  };
+};
+
 
 bool GlPoints::load(const char * in){
   try{
@@ -20,8 +51,10 @@ bool GlPoints::load(const char * in){
 
     loader.read_volume(vol);
 
+    vol.reset();
     set_level(1);
     printf("found %d points.\n", list.size());
+    
   }catch(const Loader::Ex & err){
     printf("Problem occured: %s\n", err.reason.c_str());
     return false;
@@ -138,6 +171,8 @@ void GlPoints::pick(int x, int y){
 int level = 3;
 int threshold = 3;
 int generation = 3;
+int amount = 5;
+int iterations = 2;
 
 void TW_CALL get_level(void * value, void * UserData){
   //printf("getting level %f\n", (float)level);
@@ -169,21 +204,22 @@ void TW_CALL save_file( void * UserData){
 };
 
 void TW_CALL step( void * UserData){
-  ((GlPoints *)UserData)->vol.propagate(threshold, generation);
-  ((GlPoints *)UserData)->vol.updated = true;
+  
+  for(int i = 0; i < iterations; i++){
+    ((GlPoints *)UserData)->vol.propagate(threshold, generation, amount);
+    ((GlPoints *)UserData)->vol.updated = true;
 
-  generation %= 100; generation ++; 
+    generation %= 100; generation ++; 
+  };
+  ((GlPoints *)UserData)->vol.reseed();
+
 };
 
 
-
-void GlPoints::gui(){
+void GlPoints::gui(TwBar * points_bar){
     tw_pnt=1.0;
     tw_pnt_smooth=false;
         
-    /// Create a tweak bar
-    points_bar = TwNewBar("Display");
-
     ///building bars is a different business..
      
     TwDefine(" GLOBAL help='Voxelbrain Voxel editor.' "); // Message added to the help bar.
@@ -209,6 +245,8 @@ void GlPoints::gui(){
     TwAddSeparator(points_bar, "Editing.", NULL);
     TwAddVarRW(points_bar, "", TW_TYPE_INT32, &tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
     TwAddVarRW(points_bar, "", TW_TYPE_INT32, &threshold, " min=3 max=100 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
+    TwAddVarRW(points_bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead.' help='Skip this many voxels in search for suitable areas.' ");
+    TwAddVarRW(points_bar, "", TW_TYPE_INT32, &iterations, " min=1 max=200 step=10 label='Iterations.' help='Iterations per button press' ");
     TwAddButton(points_bar, "", step, this, "label='Step' key='g'");
     TwAddSeparator(points_bar, "File.", NULL);
     TwAddButton(points_bar, "", load_file, this, "label='Load'");

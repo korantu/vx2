@@ -7,13 +7,12 @@ FastVolume::FastVolume()
 {
   vol = new t_vox[n_voxels]; 
   mask = new unsigned char [n_voxels];
+  depth = new unsigned char [n_voxels];
   
 
-  if((!vol) || (!mask)) throw "Out of memory\n";
+  if((!vol) || (!mask) || (!depth)) throw "Out of memory\n";
 
-  //init mask
-  for(int i = 0; i < n_voxels; i++)
-    mask[i] = 0;
+  reset();
 };
 
 void FastVolume::copy(t_vox * arr, int width, int height, int depth)
@@ -26,9 +25,37 @@ void FastVolume::copy(t_vox * arr, int width, int height, int depth)
       }; 	
 };
 
+void FastVolume::reset(){
+  //init mask
+  for(int i = 0; i < n_voxels; i++){
+    mask[i] = 0;
+    depth[i] = 254;
+   };
+  markers.clear();
+};
+
+void FastVolume::reseed(){
+  int i, j, cur;
+  markers.clear();
+
+  for(i = getOffset(1,1,1); i < getOffset(254,254,254); i++){
+    if(mask[i]==255)mask[i]=100; //just make sure we seed what we seed
+    if((mask[i] != 0) && (vol[i] != 0)){
+      for(j = 0; j < 6; j++){
+	cur =  i+neighbours[j];
+	if(mask[cur]==0){
+	  mask[i]=255; markers.push_back(i);
+	  j = 100; //next point, please
+	};
+      };
+    };
+  };
+};
+
 FastVolume::~FastVolume(){
   delete[] vol;
   delete[] mask;
+  delete[] depth;
 };
 
 
@@ -83,6 +110,7 @@ void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * b
 	offset = getOffset(line.x, line.y, line.z);
 	if(!mask[offset]){
 	  mapper.map((void *)(&(buf[pos*3])), vol[offset]);
+          buf[pos*3]=(depth[offset]*20)%256;
 	}else{
 	  buf[pos*3]=mask[offset];
 	  buf[pos*3+1]=0;
@@ -103,13 +131,34 @@ void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * b
 
 void FastVolume::add_point(V3f &pnt){
   int offset = getOffset(pnt.x, pnt.y, pnt.z); 
-  mask[offset]=255;
-  markers.push_back(offset);
+  if(mask[offset]!=255)
+    {
+      markers.push_back(offset);
+      mask[offset] = 255;
+	};
 }; 
 
-void FastVolume::propagate(int threshold, int generation){
-  int cur, cur_val, cur_idx;
+bool lookahead(FastVolume * in, std::vector<int> &res, int start, int dir, int amount){
+  int cur = start;
+  for(int i = 0; i <= amount; i++){
+    cur += dir;
+    if((in->mask[cur] != 0) || (in->vol[cur] == 0)){//we are out; mark everything in between
+      for(int j = i; j >= 0; j--){
+	cur -= dir;	
+	in->mask[cur] = 255;
+	res.push_back(cur);
+	
+      };
+      return true;  //was able to jump
+    };
+  };
+  return false; //no luck; just propagate one step.
+};
+
+void FastVolume::propagate(int threshold, int generation, int dist){
+  int cur, cur_val, cursor_idx;
   std::vector<int> res;
+  int cur_idx;  
 
   //every point
   for(std::vector<int>::iterator i = markers.begin(); i != markers.end(); i++){
@@ -120,9 +169,12 @@ void FastVolume::propagate(int threshold, int generation){
       cur_idx = cur + neighbours[j];
       cur_val = vol[cur_idx];
       if(mask[cur_idx])continue;
-      if((cur_val > 0) && (cur_val < threshold)){
-	mask[cur_idx] = 255;
-	res.push_back(cur_idx);
+      //try lookahead first; proceed as normal if unsuccessful;
+      if(!lookahead(this, res, cur, neighbours[j], dist)){
+	if((cur_val > 0) && (cur_val < threshold) && depth[cur_idx] < 10){
+	  mask[cur_idx] = 255;
+	  res.push_back(cur_idx);
+	};
       };
     };
   };

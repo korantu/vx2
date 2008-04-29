@@ -279,18 +279,16 @@ void TW_CALL set_scheme(const void * value, void * UserData){
 };
 
 
-void slices::gui(){
-    /// Create a tweak bar
-    cross_bar = TwNewBar("Crossections");
+void slices::gui(TwBar * cross_bar){
     the_slice = this;
     
     the_slice->tiles_coverage(0.25, 1.0);
     
 
-    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_size, ::get_size, NULL, " min=20 max=300 step=5 label='Tile size'");
-    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_zoom, ::get_zoom, NULL, " min=1 max=5 step=1 label='Zoom'");
-    TwAddVarCB(cross_bar, "", TW_TYPE_FLOAT, ::set_coverage, ::get_coverage, NULL, " min=0.25 max=1.0 step=0.03 label='Coverage'");
-    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_scheme, ::get_scheme, NULL, " min=0 max=4 step=1 label='Color scheme'");
+    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_size, ::get_size, NULL, " min=20 max=300 step=5 label='Tile size' group='2D'");
+    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_zoom, ::get_zoom, NULL, " min=1 max=5 step=1 label='Zoom' group='2D'");
+    TwAddVarCB(cross_bar, "", TW_TYPE_FLOAT, ::set_coverage, ::get_coverage, NULL, " min=0.25 max=1.0 step=0.03 label='Coverage' group='2D'");
+    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_scheme, ::get_scheme, NULL, " min=0 max=4 step=1 label='Color scheme' group='2D'");
 };
 
 

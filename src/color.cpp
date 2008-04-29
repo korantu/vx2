@@ -58,9 +58,9 @@ void scheme_fill(ColorMapper & in, int scheme){
     break;
   case 1:
     fill_init( V3f(0,0,0) );
-    fill(in, 20, V3f(30,30,244));
-    fill(in, 50, V3f(30,244,100));
-    fill(in, 100, V3f(60,140,100));
+    fill(in, 20, V3f(30,244,0));
+    fill(in, 50, V3f(30,0,0));
+    fill(in, 100, V3f(60,140,0));
     fill(in, 255, V3f(0,0,0));
     // fill(in, 255, V3f(0,0,0));
     break;
@@ -80,14 +80,17 @@ void scheme_fill(ColorMapper & in, int scheme){
     break;
   case 4:
     fill_init( V3f(0,0,0) );
-    fill(in, 20, V3f(0,0,244));
-    fill(in, 60, V3f(0,244,244));
-    fill(in, 80, V3f(244,244,244));
-    fill(in, 255, V3f(244,244,244));
+    fill(in, 20, V3f(100,0,0));
+    fill(in, 60, V3f(0,244,0));
+    fill(in, 80, V3f(0,0,0));
+    fill(in, 255, V3f(244,244,0));
     // fill(in, 255, V3f(0,0,0));
     break;
   };
 };
+
+
+
 
 
 
