@@ -194,9 +194,9 @@ bool refine(V3f & v0, V3f & v1, V3f & v2){
     the_gui->pnt->vol.mask[cur]|=TRU;
   };
   //check if the refinement is needed
-  if((v0-v1).length2() > 1.0 ||
-     (v1-v2).length2() > 1.0 ||
-     (v2-v0).length2() > 1.0){
+  if((v0-v1).length2() > 0.3 ||
+     (v1-v2).length2() > 0.3 ||
+     (v2-v0).length2() > 0.3){
     V3f o0 = (v0+v1)/2;
     V3f o1 = (v1+v2)/2;
     V3f o2 = (v2+v0)/2;
