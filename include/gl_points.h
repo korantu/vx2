@@ -6,17 +6,18 @@
 #include "v3tools.h"
 #include "glfw.h"  //TODO included only for GLint/GLdouble; try to remove
 
-#include <AntTweakBar.h>
 
 struct GlPoints {
 
-GlPoints(): cursor(128,128,128), tool(0) {
+GlPoints(): cursor(128,128,128), tool(0), cur_level(1) {
+  tool = 0;
   };
 
   GLint viewport[4];
   GLdouble modelview[16];
   GLdouble projection[16];
 
+  int scheme;
 
   int tool;
 
@@ -31,7 +32,8 @@ GlPoints(): cursor(128,128,128), tool(0) {
   V3f cursor;
   void set_level(float l);
 
-  std::vector<int> list;
+  std::vector<int> list[15]; //10 top layers
+  int cur_level; //the level we want to
 
   void pick(int,int); //pick a point from the volume
 
@@ -45,7 +47,8 @@ GlPoints(): cursor(128,128,128), tool(0) {
 
   void set_cursor(V3f);
 
-  void gui(TwBar *);
+  void apply();
+
 };
 
 

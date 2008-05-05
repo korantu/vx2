@@ -21,7 +21,12 @@ void FastVolume::copy(t_vox * arr, int width, int height, int depth)
   for(int z = 0; z < depth; z++)
     for(int y = 0; y < height; y++)
       for(int x = 0; x < width; x++){
-	vol[getOffset(x,y,z)] = arr[x+width*y+width*height*z]; 
+	int off = getOffset(x,y,z);
+	vol[off] = arr[x+width*y+width*height*z];
+	if(vol[off] < 1)
+	  mask[off]=ZRO;
+	else
+	  mask[off]=0;
       }; 	
 };
 
@@ -32,6 +37,7 @@ void FastVolume::reset(){
     depth[i] = 254;
    };
   markers.clear();
+  cur_gen=1;
 };
 
 void FastVolume::reseed(){
@@ -39,15 +45,18 @@ void FastVolume::reseed(){
   markers.clear();
 
   for(i = getOffset(1,1,1); i < getOffset(254,254,254); i++){
-    if(mask[i]==255)mask[i]=100; //just make sure we seed what we seed
-    if((mask[i] != 0) && (vol[i] != 0)){
+    if(BDR & mask[i]){
+      mask[i] -= BDR; mask[i] |= MSK; //just make sure we seed what we seed
+    };
+    if((mask[i] & MASK) && !(vol[i] & ZRO)){ 
       for(j = 0; j < 6; j++){
 	cur =  i+neighbours[j];
 	if(mask[cur]==0){
-	  mask[i]=255; markers.push_back(i);
+	  mask[i]=mask[i] | MASK; //we don't care if it is also a mask 
+	  markers.push_back(i);
 	  j = 100; //next point, please
-	};
-      };
+	};//if(mask[cur]==0)
+      };//for(j = 0; j < 6; j++)
     };
   };
 };
@@ -60,20 +69,22 @@ FastVolume::~FastVolume(){
 
 
 void FastVolume::findSurface(std::vector<int> & res, int border){
-  for(int z = 1; z < 0xfe; z++)
-    for(int y = 1; y < 0xfe; y++){
-      int max_cur = getOffset(0xfe,y,z);
-      for(int cur = getOffset(1,y,z); cur < max_cur; cur++){
-	if(vol[cur] > border)
-	  if(vol[cur+dx] <= border ||
-	     vol[cur-dx] <= border ||
-	     vol[cur+dy] <= border ||
-	     vol[cur-dy] <= border ||
-	     vol[cur+dz] <= border ||
-	     vol[cur-dz] <= border)  res.push_back(cur);
-      };
-    };
+  cur_gen = 1;
+  for(int cur = getOffset(1,1,1); cur < getOffset(255,255,255); cur++){
+    if(vol[cur] < 1)mask[cur] |= ZRO;
+  };
+
+  for(int cur = getOffset(1,1,1); cur < getOffset(255,255,255); cur++){
+    if(!(mask[cur] & ZRO))
+      if((mask[cur+dx] & ZRO) ||
+	 (mask[cur-dx] & ZRO) ||
+	 (mask[cur+dy] & ZRO) ||
+	 (mask[cur-dy] & ZRO) ||
+	 (mask[cur+dz] & ZRO) ||
+	 (mask[cur-dz] & ZRO))  res.push_back(cur);
+  };
 };
+
 
 void FastVolume::iterate(Iterator & it){
   for(int z = 1; z < 0xfe; z++)
@@ -92,7 +103,7 @@ inline bool valid(int x, int y, int z){
 #include "color.h"
 
 /// slice an input buffer
-void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * buf, ColorMapper & mapper, int zoom){
+void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * buf, ColorMapper & mapper, int zoom, bool show_mask){
   //scheme_fill(mapper, 0);
   int pos = 0;
   int offset;
@@ -108,13 +119,13 @@ void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * b
     for(int x = 0; x < w; x++){
       if(valid(cur.x, cur.y, cur.z)){
 	offset = getOffset(line.x, line.y, line.z);
-	if(!mask[offset]){
+	if(!((MASK | TRU) & mask[offset]) || !(show_mask)){
 	  mapper.map((void *)(&(buf[pos*3])), vol[offset]);
-          buf[pos*3]=(depth[offset]*20)%256;
+          //buf[pos*3]=(depth[offset]*20)%256;
 	}else{
-	  buf[pos*3]=mask[offset];
-	  buf[pos*3+1]=0;
-	  buf[pos*3+2]=255;
+	  buf[pos*3]=(mask[offset] & BDR)?255:0; 
+	  buf[pos*3+1]=(mask[offset] & MSK)?255:0; 
+	  buf[pos*3+2]=(mask[offset] & TRU)?255:0;;
 	}
       }
       else  //completely outside
@@ -131,52 +142,106 @@ void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * b
 
 void FastVolume::add_point(V3f &pnt){
   int offset = getOffset(pnt.x, pnt.y, pnt.z); 
-  if(mask[offset]!=255)
+  if(BDR & mask[offset])
     {
       markers.push_back(offset);
-      mask[offset] = 255;
-	};
-}; 
+      mask[offset] = BDR | cur_gen;
+    };
+};
 
-bool lookahead(FastVolume * in, std::vector<int> &res, int start, int dir, int amount){
+//here we add tools; to be replaced with proper structures
+void FastVolume::use_tool(int idx, int what){
+  switch(what){
+  case 0:// do nothing
+    break;
+  case 1:
+    if(!(BDR & mask[idx])){
+      mask[idx]=BDR | cur_gen;
+      markers.push_back(idx);
+    };
+  };
+};
+
+bool lookahead(FastVolume * in, std::vector<int> &res, int start, int dir, int amount, int cur_gen){
   int cur = start;
   for(int i = 0; i <= amount; i++){
     cur += dir;
-    if((in->mask[cur] != 0) || (in->vol[cur] == 0)){//we are out; mark everything in between
+    if(in->mask[cur] & (ZRO | MASK)){//we are out; mark everything in between
       for(int j = i; j >= 0; j--){
 	cur -= dir;	
-	in->mask[cur] = 255;
-	res.push_back(cur);
+	if(!(BDR & in->mask[cur])){
+	  if(GEN((in->mask[cur])) != 0) //check if the cell already had a generation
+	    in->mask[cur] = BDR | (GEN(in->mask[cur]));
+	  else
+	    in->mask[cur] = BDR | cur_gen;
+
+	  res.push_back(cur);
+	    };
 	
       };
-      return true;  //was able to jump
+      return true;  // was able to jump
     };
   };
   return false; //no luck; just propagate one step.
 };
 
-void FastVolume::propagate(int threshold, int generation, int dist){
+void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
+  cur_gen++;
   int cur, cur_val, cursor_idx;
   std::vector<int> res;
   int cur_idx;  
 
+  for(int iter = 0; iter < times; iter++){
+    res.clear();
   //every point
-  for(std::vector<int>::iterator i = markers.begin(); i != markers.end(); i++){
-    cur = *i;
-    mask[cur]=generation;
-    //every neighbour
-    for(int j = 0; j < 6; j++){
-      cur_idx = cur + neighbours[j];
-      cur_val = vol[cur_idx];
-      if(mask[cur_idx])continue;
-      //try lookahead first; proceed as normal if unsuccessful;
-      if(!lookahead(this, res, cur, neighbours[j], dist)){
-	if((cur_val > 0) && (cur_val < threshold) && depth[cur_idx] < 10){
-	  mask[cur_idx] = 255;
-	  res.push_back(cur_idx);
+    for(std::vector<int>::iterator i = markers.begin(); i != markers.end(); i++){
+      cur = *i;
+      if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
+      //every neighbour
+      for(int j = 0; j < 6; j++){
+	cur_idx = cur + neighbours[j];
+	cur_val = vol[cur_idx];
+	if(MASK & mask[cur_idx])continue;
+	//try lookahead first; proceed as normal if unsuccessful;
+	if(!lookahead(this, res, cur, neighbours[j], dist, cur_gen)){
+	  if((!(ZRO & mask[cur_idx])) && (cur_val < threshold) && depth[cur_idx] < max_depth){
+	    if(!(BDR & mask[cur_idx])){
+	      mask[cur_idx] = BDR | mask[cur_idx];
+	      res.push_back(cur_idx);
+	    };
+	  };
 	};
       };
     };
+    markers = res;
+    printf("Markers %d\n", markers.size());
   };
-  markers = res;
+  if(cur_gen > (GEN_MAX-3))downshift(MASK);
+  reseed();
+};
+
+void FastVolume::undo(){
+  for(int i = getOffset(1,1,1); i < getOffset(255,255,255); i++){
+    if((mask[i] & MASK))printf("%d gen, while cur. gen %d\n", GEN(mask[i]), cur_gen);
+    if((mask[i] & MASK) && ((GEN(mask[i])) >= cur_gen)){ 
+      mask[i]=(FLAGS & (mask[i]-(mask[i] & MASK)));
+      printf(".\n");
+    };
+  };//each point  
+
+  if(cur_gen > 1)cur_gen--;
+  
+  markers.clear();
+  reseed();
+
+};
+
+void FastVolume::downshift(int flags = MASK){
+  for(int i = getOffset(1,1,1); i < getOffset(255,255,255); i++){
+    if((flags & mask[i]) && (GEN(mask[i]) > 0))
+      { //ok, we want to deal with this voxel- it is our type and can be downshifted
+	mask[i] = /*flags*/((0xff-GEN_MAX) & mask[i]) + /*gen-1*/(GEN(mask[i])-1);
+    
+      };
+  };
 };

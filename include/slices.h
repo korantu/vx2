@@ -7,8 +7,6 @@
 #include "gl_points.h"
 #include "misc.h"
 
-#include <AntTweakBar.h>
-
 struct slices{
 
   struct slice{
@@ -46,21 +44,21 @@ struct slices{
   int xn_toshow;
   int yn_toshow;
   bool update_needed;
+  bool show_mask;
 
-
-  void update(FastVolume & in, V3f _center, V3f _dx, V3f _dy, V3f _dz);
+  void update(FastVolume & in, V3f _center);//, V3f _dx, V3f _dy, V3f _dz);
   void update(FastVolume & in);
   void update(){update_needed = true;};
   void draw();
+  void draw_box();
   void setup_projection();
   void resize_all(int _width, int _height, int _tile_w, int _tile_h);
   void resize_screen(int _width, int _height);
   void resize_tile(int _tile_w, int _tile_h);
+  void switch_crossections();
   void tiles_coverage(float _area_x, float _area_y); //what percentage we want covered with tiles
   void allocate_store(int _width, int _height, int _tile_w, int _tile_h);
   void free_store();
-
-  void gui(TwBar *);
   
 
   slices(GlPoints * _p, int _width, int _height, int _tile_w, int _tile_h);

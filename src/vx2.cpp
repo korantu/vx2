@@ -25,22 +25,15 @@
 #define GLFW_DLL
 
 #include "glfw.h"
-#include "tw_gui.h"
-
 #include "gui.h"
-
 #include "v3.h"
-
 #include <stdio.h>
-
 #include "gl_wrapper.h"
 #include "gl_points.h"
-
-
 #include "v3tools.h"
 #include "slices.h"
-
 #include "misc.h"
+#include "color.h"
 
 
 ///mouse button
@@ -48,8 +41,6 @@
 struct main_module : public gl_wrapper_reciever {
 
   bool render_required;
-
-  // TwGui tw_gui;
 
   slices crossection;
 
@@ -108,7 +99,7 @@ struct main_module : public gl_wrapper_reciever {
     printf("resz: w:%d; h:%d\n", st.width, st.height);
     crossection.resize_screen(st.width, st.height);
     //  crossection.tiles_coverage(0.25, 1.0);
-    crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1));
+    crossection.update(volume.vol, volume.cursor);//, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1));
     
   };
   void do_key(){
@@ -144,18 +135,7 @@ struct main_module : public gl_wrapper_reciever {
 	if(volume.tool == 1)crossection.update();
       }else{
 	volume.pick(st.x, st.height-st.y);
-
-
-      //choosing best normal
-	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
-		 
-		   printf("XX\n"),printf("YY\n"),printf("ZZ\n"));
-	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
-		   crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1)),
-		   crossection.update(volume.vol, volume.cursor, V3f(0,1,0), V3f(1,0,0), V3f(0,0,1)),
-		   crossection.update(volume.vol, volume.cursor, V3f(0,0,1), V3f(0,1,0), V3f(1,0,0)));
-	;
-
+	crossection.update(volume.vol, volume.cursor);
       };
       render_required = true;
     };
@@ -170,16 +150,7 @@ struct main_module : public gl_wrapper_reciever {
       //
       if(volume.vol.updated){
 	volume.vol.updated = false;
-
-      //choosing best normal
-	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
-		 
-		   printf("XX\n"),printf("YY\n"),printf("ZZ\n"));
-	CHOOSE_MAX(volume.cursor.x, volume.cursor.y, volume.cursor.z,
-		   crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1)),
-		   crossection.update(volume.vol, volume.cursor, V3f(0,1,0), V3f(1,0,0), V3f(0,0,1)),
-		   crossection.update(volume.vol, volume.cursor, V3f(0,0,1), V3f(0,1,0), V3f(1,0,0)));
-	;
+	crossection.update(volume.vol, volume.cursor);
       };
       
       //proj.rot(0.15, 0.092);
@@ -208,6 +179,7 @@ struct main_module : public gl_wrapper_reciever {
       // glLoadIdentity();
 
       volume.draw();
+      crossection.draw_box();
 
       if(crossection.update_needed)
 	crossection.update(volume.vol);
@@ -229,18 +201,13 @@ struct main_module : public gl_wrapper_reciever {
 int main(int argc, char ** argv) 
 {
   main_module core;
- 
-  //core.tw_gui.init();
- 
-  /* TwBar * bar = TwNewBar("Options");
-  TwDefine("Options size='200 600'");
-  */
-  gui_start( &core.crossection, &core.volume);
+  
+  color_init();
 
   if( ! core.volume.load("brainmask.mgz") )return -1;
   
-    
-  gl_init(&core);
+   gl_init(&core);
+   gui_start( &core.crossection, &core.volume);
 
 
   // Initialize time
@@ -257,7 +224,6 @@ int main(int argc, char ** argv)
   glfwTerminate();
 
   gui_stop();
-  //core.tw_gui.stop();
   
   return 0;
 };

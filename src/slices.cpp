@@ -72,8 +72,47 @@ bool slices::locate(V3f pos, int &x, int &y){
 
 };
 
+void draw_line(V3f a, V3f b){
+  glVertex3f(a.x, a.y, a.z);
+  glVertex3f(b.x, b.y, b.z);
+};
 
+void draw_edges(V3f o, V3f ex, V3f ey, V3f ez, int fl){
+  V3f zero(0,0,0);
+  for(int n = 0; n < 3; n++){
+    if(!(fl & (1 << n))){
+      V3f a = o + ((fl & 1)?ex:zero) + ((fl & 2)?ey:zero) + ((fl & 4)?ez:zero);
+      int fb = fl + (1 << n);
+      V3f b = o + ((fb & 1)?ex:zero) + ((fb & 2)?ey:zero) + ((fb & 4)?ez:zero);
+      draw_line(a, b);
+    };
+  };
+};
 
+void slices::draw_box(){
+  V3f o(center);
+  V3f ex = dx*tile_w/zoom;
+  V3f ey = dy*tile_h/zoom;
+  V3f ez = dz*xn_toshow*yn_toshow;
+  o -= (ex/2);
+  o -= (ey/2);
+  o -= (ez/2);
+
+  glLineWidth(2.0);
+  glBegin(GL_LINES);
+  glColor3f(0,1,1);
+  //let us make 4 parallel boxes
+  int N = 2; ez/=N;
+  for(int slab = 0; slab < N; slab++){
+    for(int i = 0; i < 7; i++){ //the vertice number; bitmask
+      draw_edges(o, ex, ey, ez, i);
+    };
+     o += ez;
+    };
+  glEnd();
+
+  glLineWidth(1.0);
+};
 
 void slices::draw(){
   setup_projection();
@@ -156,19 +195,23 @@ void slices::setup_projection(){
   glLoadIdentity();
 };
 
-void slices::update(FastVolume & in, V3f _center, V3f _dx, V3f _dy, V3f _dz){
-
+void slices::update(FastVolume & in, V3f _center)//, V3f _dx, V3f _dy, V3f _dz){
+{
   ColorMapper m;
   scheme_fill(m, this->scheme);
   //the_volume = &in;
   
-  dx = _dx; dy = _dy; dz=_dz; center=_center;
+  //  dx = _dx; dy = _dy; dz=_dz; 
+  //we don not want to change orientation while updating; the parameters should just go
+  // a second version of the slicer will fix it.
+//_dx = dx; _dy = dy; _dz=dz; 
+center=_center;
   
-  V3f c(_center); c -= (_dz*((xn_toshow*yn_toshow)/2+1));
+  V3f c(_center); c -= (dz*((xn_toshow*yn_toshow)/2+1));
   for(int y = 0 ; y < yn_toshow; y++)
     for(int x = 0; x < xn_toshow; x++){
-      c+=_dz;
-      in.raster( c, _dx, _dy, tile_w, tile_h, tiles[xn*y+x]->data, m, zoom);
+      c+=dz;
+      in.raster( c, dx, dy, tile_w, tile_h, tiles[xn*y+x]->data, m, zoom, show_mask);
     };
   update_needed = false;
   
@@ -176,9 +219,18 @@ void slices::update(FastVolume & in, V3f _center, V3f _dx, V3f _dy, V3f _dz){
 
 void slices::update(FastVolume & in){
   /// if(the_volume)
-    update(in, center, dx, dy,dz);
+  update(in, center);//, dx, dy,dz);
 }
 
+void slices::switch_crossections(){
+  V3f ndz = dy;
+  V3f ndx = dz;
+  dy = dx;
+  dz = ndz;
+  dx = ndx; 
+  //rotate unit vectors, to give better projection.
+  update();
+};
 
 //changing layout
 void slices::resize_screen(int w, int h){
@@ -204,7 +256,8 @@ slices::slices(GlPoints * _pnts, int _width, int _height, int _tile_w, int _tile
   allocate_store(_width, _height, _tile_w, _tile_h);
   area_x = 1.0; area_y = 1.0;
   zoom = 2;
-  scheme = 1;
+  scheme = 0;
+  show_mask = true;
   //the_volume = 0;
 };
 
@@ -214,81 +267,16 @@ slices::slices(GlPoints * _pnts){
   allocate_store(201, 201, 150, 150);
   area_x = 1.0; area_y = 1.0;
   zoom = 2;
-  scheme = 1;
+  scheme = 0;
+  show_mask = true;
+  dx = V3f(1,0,0);
+  dy = V3f(0,1,0);
+  dz = V3f(0,0,1);
   //the_volume = 0;
 };
 
 slices::~slices(){
   free_store();
-};
-
-
-#include <AntTweakBar.h>
-
-TwBar *cross_bar;			// Pointer to a tweak bar
-
-slices * the_slice;
-
-
-int size = 100;
-int scheme = 1;
-int zoom = 1;
-float coverage = 0.25;
-
-
-void TW_CALL get_size(void * value, void * UserData){
-  (*((int *)value))=(int)size;
-};
-
-void TW_CALL set_size(const void * value, void * UserData){
-  size = *((int *)value);
-  printf("setting level %d\n", size);
-  the_slice->resize_tile((int)size, (int)size);
-};
-
-void TW_CALL get_zoom(void * value, void * UserData){
-  (*((int *)value))=the_slice->zoom;
-};
-
-void TW_CALL set_zoom(const void * value, void * UserData){
-  the_slice->zoom = (*((int *)value));
-  the_slice->update();
-};
-
-//coverage
-void TW_CALL get_coverage(void * value, void * UserData){
-  (*((float *)value))=coverage;
-};
-
-void TW_CALL set_coverage(const void * value, void * UserData){
-  coverage = (*((float *)value));
-  the_slice->tiles_coverage(coverage, 1.0);
-  the_slice->update();
-  
-};
-
-void TW_CALL get_scheme(void * value, void * UserData){
-  (*((int *)value))=(int)scheme;
-};
-
-void TW_CALL set_scheme(const void * value, void * UserData){
-  scheme = *((int *)value);
-  printf("setting scheme %d\n", scheme);
-  the_slice->scheme = scheme;
-  the_slice->update();
-};
-
-
-void slices::gui(TwBar * cross_bar){
-    the_slice = this;
-    
-    the_slice->tiles_coverage(0.25, 1.0);
-    
-
-    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_size, ::get_size, NULL, " min=20 max=300 step=5 label='Tile size' group='2D'");
-    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_zoom, ::get_zoom, NULL, " min=1 max=5 step=1 label='Zoom' group='2D'");
-    TwAddVarCB(cross_bar, "", TW_TYPE_FLOAT, ::set_coverage, ::get_coverage, NULL, " min=0.25 max=1.0 step=0.03 label='Coverage' group='2D'");
-    TwAddVarCB(cross_bar, "", TW_TYPE_INT32, ::set_scheme, ::get_scheme, NULL, " min=0 max=4 step=1 label='Color scheme' group='2D'");
 };
 
 

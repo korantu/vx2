@@ -5,6 +5,16 @@
 #include "v3.h"
 #include "color.h"
 
+#define BDR 0x80 //active border; can have several generations
+#define ZRO 0x40 //zero points, which will be removed from the resulting
+#define MASK ( BDR | MSK ) //selecvted points
+#define TRU 0x20 //known-true point; loaded externally.
+#define MSK 0x10 //this is the mask itself... gotta hurt :(
+#define GEN_MAX 0x0f //ok, now only 32 generations avaliable; good enough
+#define FLAGS (0xff - GEN_MAX) //getting flags
+#define GEN(X) ((X)&GEN_MAX) //what is the generation
+
+
 /* 256x256x256 volume storage */
 class FastVolume {
  public:  
@@ -12,7 +22,7 @@ class FastVolume {
   bool updated;
   /* Storage item */
   typedef short int t_vox; 
-  
+
   /* Constructor/Destructor */
   FastVolume();
   ~FastVolume();
@@ -25,7 +35,12 @@ class FastVolume {
   unsigned char * mask;
   unsigned char * depth;
   void add_point(V3f &in);
-  void propagate(int threshold, int generation, int amount);
+  void propagate(int threshold, int amount, int depth, int times);
+  void undo();   //remove the specified generation and its neighbouring seeds
+  void downshift(int flags); //shift all values down;
+  void use_tool(int where, int which);
+
+  int cur_gen;
 
   /* Cubic arrangement makes for efficient lookup */
   static const int dx = 0x01;
@@ -77,7 +92,7 @@ class FastVolume {
 
   //center, dx, dy, pixel/width/height, buffer, zoom (default = 1) 
   static inline void iterate(Iterator &);
-  void raster( V3f o, V3f dx, V3f dy, int w, int h, unsigned char * buf, ColorMapper & mapper, int zoom = 1);
+  void raster( V3f o, V3f dx, V3f dy, int w, int h, unsigned char * buf, ColorMapper & mapper, int zoom = 1, bool show_mask = true);
 
 };
 

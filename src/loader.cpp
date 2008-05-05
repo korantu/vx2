@@ -234,10 +234,14 @@ void Loader::parse(raw data, FastVolume & result, bool read){
 
     z_r = get_float(data, pos) ; z_a = get_float(data, pos) ; z_s = get_float(data, pos) ;
     c_r = get_float(data, pos) ; c_a = get_float(data, pos) ; c_s = get_float(data, pos) ;
-  }
+  };
   /* so stuff can be added to the header in the future */
   ///fread(unused_buf, sizeof(char), unused_space_size, fp) ;
   
+  printf("R: x(%f) y(%f) z(%f) c(%f)\n", x_r, y_r, z_r, c_r);
+  printf("A: x(%f) y(%f) z(%f) c(%f)\n", x_a, y_a, z_a, c_a);
+  printf("S: x(%f) y(%f) z(%f) c(%f)\n", x_s, y_s, z_s, c_s);
+
   pos += unused_space_size;
   
   if(!read){ //do some sanity checks before writing
