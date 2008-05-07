@@ -9,8 +9,9 @@
 
 struct GlPoints {
 
-GlPoints(): cursor(128,128,128), tool(0), cur_level(1) {
+GlPoints(): cursor(128,128,128), tool(0), cur_level(1), tw_transparency(0.5) {
   tool = 0;
+  tool_size=1;
   };
 
   GLint viewport[4];
@@ -20,6 +21,7 @@ GlPoints(): cursor(128,128,128), tool(0), cur_level(1) {
   int scheme;
 
   int tool;
+  int tool_size;
 
   Loader loader;
   FastVolume vol;
@@ -28,9 +30,11 @@ GlPoints(): cursor(128,128,128), tool(0), cur_level(1) {
   float tw_cursor_depth; //how far after hit cursor goes
   float tw_mri_value; //what is the mri value at the cursor is
   double tw_pnt;
+  float tw_transparency;
   bool tw_pnt_smooth;
   V3f cursor;
   void set_level(float l);
+  void set_scheme(int sch); ///set color scheme
 
   std::vector<int> list[15]; //10 top layers
   int cur_level; //the level we want to
@@ -42,7 +46,8 @@ GlPoints(): cursor(128,128,128), tool(0), cur_level(1) {
 
   bool load(const char *);
   bool save(const char *);
-  void draw();
+  void draw(V3f z);
+  void set_projection();
   void point_size(float _pnt){pnt = _pnt;};
 
   void set_cursor(V3f);

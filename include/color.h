@@ -22,6 +22,7 @@ struct ColorMapper{
 
   void fill_init(V3f _f);
   void fill(int end, V3f to);
+  void fill(const int *);
 
   int start;
   V3f from;

@@ -214,6 +214,7 @@ center=_center;
       in.raster( c, dx, dy, tile_w, tile_h, tiles[xn*y+x]->data, m, zoom, show_mask);
     };
   update_needed = false;
+  show_mask = true; //show it next time
   
 };
 

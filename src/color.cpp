@@ -5,6 +5,8 @@
 #include "v3.h"
 #include <glfw.h>
 
+#include "clut.h"
+
 /**
    Make sure to call color_init() to set up the color tables. Well..ok.
  */
@@ -26,12 +28,14 @@ ColorMapper::ColorMapper(const ColorMapper & in){
 };
 
 void ColorMapper::map(void * where, int i){
-  i = (i>=0)?i % 250:0;
+  if(i>200)i=200;
+  if(i<0)i=0;
   memcpy(where, (void *)(&(col[(i%255)*3])), 3);
 };
  
 void ColorMapper::map(int & r, int & g, int &b, int i){
-  i = (i>=0)?i % 250:0;
+  if(i>200)i=200;
+  if(i<0)i=0;
   r = col[i*3];
   g = col[i*3+1];
   b = col[i*3+2];
@@ -39,8 +43,9 @@ void ColorMapper::map(int & r, int & g, int &b, int i){
 
 
 void ColorMapper::map(int i){
-  i = (i>=0)?i % 250:0;
-  glColor3b(col[i*3],col[i*3+1],col[i*3+2]);
+  if(i>200)i=200;
+  if(i<0)i=0;
+  glColor4b(col[i*3]>>1,col[i*3+1]>>1,col[i*3+2]>>1, 10);
 };
 
 
@@ -48,6 +53,16 @@ void ColorMapper::fill_init(V3f _f){
   start = 0; 
   from = _f;
 }; 
+
+
+void ColorMapper::fill(const int * in){ // "index;R;G;B" 256 times
+  for(unsigned int i = 0; i < 256; i++)
+    for(int j=0; j < 3; j++)
+      col[i*3+j]=in[i*4+1+j];
+
+  start = 0;
+  from = V3f(0,0,0);
+};
 
 void ColorMapper::fill( int end, V3f to){
   if(end > 255)end = 255;
@@ -160,6 +175,13 @@ void color_init(){
     a_map.fill( 80, V3f(0,0,0));
     a_map.fill( 255, V3f(244,244,0));
     entries.push_back(ColorEntry("Contrast", a_map));
+
+    //now loading more stuff from a static clut
+
+    for(int i = 0 ; i < clutSize; i++){
+      a_map.fill(aColorTable[i].data);
+      entries.push_back(ColorEntry(aColorTable[i].name, a_map));
+   };
 };
 
 vector<string> color_type(){

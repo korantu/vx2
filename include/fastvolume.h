@@ -7,7 +7,7 @@
 
 #define BDR 0x80 //active border; can have several generations
 #define ZRO 0x40 //zero points, which will be removed from the resulting
-#define MASK ( BDR | MSK ) //selecvted points
+#define MASK ( BDR | MSK ) //selected points
 #define TRU 0x20 //known-true point; loaded externally.
 #define MSK 0x10 //this is the mask itself... gotta hurt :(
 #define GEN_MAX 0x0f //ok, now only 32 generations avaliable; good enough
@@ -18,6 +18,14 @@
 /* 256x256x256 volume storage */
 class FastVolume {
  public:  
+
+  
+  //   Transform parameters
+   
+  struct t_tr{
+    int width, height, depth;
+    int c_r, c_a, c_s;
+  }tr;
 
   bool updated;
   /* Storage item */
@@ -34,11 +42,11 @@ class FastVolume {
   std::vector<int> markers;
   unsigned char * mask;
   unsigned char * depth;
-  void add_point(V3f &in);
+  //void add_point(V3f &in); use tool
   void propagate(int threshold, int amount, int depth, int times);
   void undo();   //remove the specified generation and its neighbouring seeds
   void downshift(int flags); //shift all values down;
-  void use_tool(int where, int which);
+  void use_tool(int where, int which, int size);
 
   int cur_gen;
 

@@ -1,5 +1,6 @@
 #include "loader.h"
 #include <zlib.h>
+#include <stdlib.h>
 
 //_* Exception handling
 Loader::Ex::Ex(std::string why): reason(why){};
@@ -21,9 +22,16 @@ Loader::~Loader(){
 };
 
 
+void get_mgz_info(std::string name){
+  std::string cmd = "mri_info ";
+  cmd += name;
+  cmd += " > tmp.txt";
+  system(cmd.c_str());
+};
 
 //_ * Read-write
 int Loader::read(std::string name){
+
 
   gzFile fd; //file descriptor
 
@@ -54,6 +62,10 @@ int Loader::read(std::string name){
   total = contents.size();
   memcpy((void *)(res), contents.c_str(), contents.size()); 
   printf("Acqured %d bytes.\n", contents.size());
+
+  //getting additional information
+  get_mgz_info(name);
+
   return contents.size();  
 };
 
@@ -214,11 +226,16 @@ void Loader::parse(raw data, FastVolume & result, bool read){
   type = get_int(data, pos) ;
   dof = get_int(data, pos) ;
 
+  printf("whdntd: %d %d %d\n", width, height, depth);
+  result.tr.width = width;
+  result.tr.height = height;
+  result.tr.depth = depth;
+
   if(read){ //if we are reading, then create
   printf("Reading...\n");
   // create(result, width, height, depth);
   //printf("created %d\n;", result.size);
-  };
+  }; 
   
   unused_space_size = UNUSED_SPACE_SIZE-sizeof(short) ;
 
@@ -228,6 +245,8 @@ void Loader::parse(raw data, FastVolume & result, bool read){
     xsize = get_float(data, pos) ;
     ysize = get_float(data, pos) ;
     zsize = get_float(data, pos) ;
+
+    printf("xyz-size:%f %f %f\n", xsize, ysize, zsize);
 
     x_r = get_float(data, pos) ; x_a = get_float(data, pos) ; x_s = get_float(data, pos) ;
     y_r = get_float(data, pos) ; y_a = get_float(data, pos) ; y_s = get_float(data, pos) ;
@@ -241,9 +260,13 @@ void Loader::parse(raw data, FastVolume & result, bool read){
   printf("R: x(%f) y(%f) z(%f) c(%f)\n", x_r, y_r, z_r, c_r);
   printf("A: x(%f) y(%f) z(%f) c(%f)\n", x_a, y_a, z_a, c_a);
   printf("S: x(%f) y(%f) z(%f) c(%f)\n", x_s, y_s, z_s, c_s);
-
-  pos += unused_space_size;
+  result.tr.c_r = c_r;
+  result.tr.c_a = c_a;
+  result.tr.c_s = c_s;
   
+
+   pos += unused_space_size;
+
   if(!read){ //do some sanity checks before writing
     //if(depth != result.depth || width != result.width || height != result.height) throw "Dimensions are mismatched";  	
   };

@@ -76,7 +76,33 @@ bool GlPoints::save(const char * out){
 
 #include "color.h"
 
-void GlPoints::draw(){
+
+
+  ColorMapper mapper;
+
+struct psortable{
+  V3f dir;
+  int xa,  ya,  za;
+  int xb,  yb,  zb;
+  psortable(V3f _dir):dir(_dir){};
+  
+  bool operator()(int a, int b){
+    FastVolume::getCoords(a, xa, ya, za);
+    FastVolume::getCoords(b, xb, yb, zb);
+    
+    return xa*dir.x+ya*dir.y+za*dir.z < xb*dir.x+yb*dir.y+zb*dir.z;
+  };
+  ~psortable(){};
+};
+
+
+void GlPoints::set_scheme(int sch){
+  scheme_fill(mapper, sch);
+};
+
+void GlPoints::set_projection(){
+  glDisable (GL_BLEND); 
+
   glDisable(GL_LIGHTING);
 
   //draw to get the idea of the whole thing.
@@ -94,8 +120,9 @@ void GlPoints::draw(){
   glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
   glGetDoublev( GL_PROJECTION_MATRIX, projection );
   glGetIntegerv( GL_VIEWPORT, (GLint *)viewport );
-  
+};
 
+void GlPoints::draw(V3f zaxis){
 
   int cursor_size = 10;
 
@@ -115,28 +142,10 @@ void GlPoints::draw(){
   glPointSize(nicety_coefficient*tw_pnt*pnt);
 
 
-  ColorMapper mapper;
-  scheme_fill(mapper, scheme);
-
-  if(tw_pnt_smooth)
-    glEnable(GL_POINT_SMOOTH);
-  else
-    glDisable(GL_POINT_SMOOTH);
-
-  glEnable(GL_DEPTH_TEST);
-  glBegin(GL_POINTS);
   int x, y, z;
-  for(std::vector<int>::iterator i = list[cur_level].begin(); i != list[cur_level].end(); i++){
-    vol.getCoords(*i, x,y,z);
-    float pnt_col =  vol.vol[*i]/300.0;
-    mapper.map(vol.vol[*i]);
-    // glColor3f(pnt_col, pnt_col, pnt_col);
-    glVertex3i(x,y,z);
-  };
-  glEnd();
-  
 
-  //and now, for something completely different:
+
+  //rendering active area first
   int cur_depth;
   glPointSize(nicety_coefficient*1.0*pnt);
   glBegin(GL_POINTS);
@@ -149,6 +158,53 @@ void GlPoints::draw(){
      glVertex3i(x,y,z);
   };
   glEnd();
+ 
+  glEnable (GL_BLEND); 
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  if(tw_pnt_smooth)
+    glEnable(GL_POINT_SMOOTH);
+  else
+    glDisable(GL_POINT_SMOOTH);
+
+  glEnable(GL_DEPTH_TEST);
+
+  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+  glDepthMask(GL_TRUE);
+  
+  glPushMatrix();
+  glTranslatef(-zaxis.x*5, -zaxis.y*5, -zaxis.z*5);
+  //depth buffer
+  glBegin(GL_POINTS);
+  for(std::vector<int>::iterator i = list[cur_level].begin(); i != list[cur_level].end(); i++){
+    vol.getCoords(*i, x,y,z);
+        glVertex3i(x,y,z);
+  };
+  glEnd();
+  glPopMatrix();
+  
+
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDepthMask(GL_FALSE);
+
+  sort(list[cur_level].begin(), list[cur_level].end(), psortable(zaxis));
+
+  int r,g,b;
+
+  glBegin(GL_POINTS);
+  for(std::vector<int>::iterator i = list[cur_level].begin(); i != list[cur_level].end(); i++){
+    vol.getCoords(*i, x,y,z);
+    int t_col = vol.vol[*i];
+    if(t_col < 1)t_col=1;
+    if(t_col > 254)t_col=254;
+    mapper.map(r,g,b ,t_col);
+    glColor4f(r / 256.0, g / 256.0, b / 256.0, tw_transparency);
+    glVertex3i(x,y,z);
+  };
+  glEnd();
+  glDepthMask(GL_TRUE);
+  
+
 };
 
 void GlPoints::apply(){
@@ -162,7 +218,7 @@ void GlPoints::set_cursor(V3f c){
   cursor = c;
   int idx = vol.getOffset((int)cursor.x, (int)cursor.y, (int)cursor.z);
   tw_mri_value = (float)vol.vol[idx];
-  vol.use_tool(idx, tool);
+  vol.use_tool(idx, tool, tool_size);
 };
 
 void GlPoints::pick(int x, int y){

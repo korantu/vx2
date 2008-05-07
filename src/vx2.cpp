@@ -67,7 +67,9 @@ struct main_module : public gl_wrapper_reciever {
       for(int i = 0; i < 16; i++)matrix[i]=_matrix[i];
     };
 
-    /// first argument - rotation over x axis;
+    V3f z(){return V3f(ex.z, ey.z, ez.z);};
+
+   /// first argument - rotation over x axis;
     /// second - over y axis
     /// which means they are inverted for mouse navigation.
     void rot(float x, float y){
@@ -178,9 +180,10 @@ struct main_module : public gl_wrapper_reciever {
       proj.loadmatrix();
       // glLoadIdentity();
 
-      volume.draw();
-      crossection.draw_box();
-
+      volume.set_projection();
+      crossection.draw_box(); //using volume projection
+      volume.draw(proj.z());
+  
       if(crossection.update_needed)
 	crossection.update(volume.vol);
       crossection.draw();
