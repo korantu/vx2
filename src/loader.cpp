@@ -23,11 +23,9 @@ Loader::~Loader(){
 
 
 void get_mgz_info(std::string name){
-  std::string cmd = "mri_info ";
-  cmd += name;
-  cmd += " > tmp.txt";
-  system(cmd.c_str());
+  //nop
 };
+
 
 //_ * Read-write
 int Loader::read(std::string name){
@@ -64,7 +62,7 @@ int Loader::read(std::string name){
   printf("Acqured %d bytes.\n", contents.size());
 
   //getting additional information
-  get_mgz_info(name);
+  //  get_mgz_info(name);
 
   return contents.size();  
 };

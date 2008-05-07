@@ -163,26 +163,47 @@ void FastVolume::use_tool(int idx, int what, int sz){
   int xi, yi, zi;
   int c;
 
-  switch(what){
-  case 0:// do nothing
-    break;
-  case 1:
-    getCoords(idx, x,y,z);
-    x-=sz/2; y-=sz/2; z-=sz/2;
-    
-    for(int xi = x; xi < x+sz; xi++)
-      for(int yi = y; yi < y+sz; yi++)
-	for(int zi = z; zi < z+sz; zi++){
-	  c = getOffset(xi, yi, zi);
+  if(!what)return;
+
+  getCoords(idx, x,y,z);
+  x-=sz/2; y-=sz/2; z-=sz/2;    
+  for(int xi = x; xi < x+sz; xi++)
+    for(int yi = y; yi < y+sz; yi++)
+      for(int zi = z; zi < z+sz; zi++){
+	c = getOffset(xi, yi, zi);
+	switch(what){
+	case 1: //add seeds
 	  if(!(BDR & mask[c])){   //if not mask already
 	    mask[c]=BDR | cur_gen;
 	    markers.push_back(c);
-	    undo_buffer.push_back(c);
 	  };
+	  break;
+	case 2: //re-prime
+	  if(mask[c] & MSK){
+	    if(!(BDR & mask[c])){   //if not mask already
+	      mask[c]=BDR | cur_gen;
+	      markers.push_back(c);
+	    };
+	    //ok, that was border
+	    break;
+	  };
+	  break;
+	case 3: //de-prime
+	  if(mask[c] & BDR){
+	    mask[c] -= (mask[c] & BDR); 
+	    for(int k = 0; k < markers.size(); k++)
+	      if(markers[k] == c)markers[k] = 500; 
+	    //set it to some arbitrary out of brain point
+	  };
+	  break;
+	case 4: //add truth
+	  mask[c] |= TRU; break;
+	case 5: //clean everything
+	  mask[c] -= ((MASK | TRU) & mask[c]); break;
 	};
-  };
+      };
 
-  undo_buffer.push_back(0); 
+  if(what == 1) undo_buffer.push_back(c);
 };
 
 bool lookahead(FastVolume * in, std::vector<int> &res, int start, int dir, int amount, int cur_gen){
@@ -191,7 +212,7 @@ bool lookahead(FastVolume * in, std::vector<int> &res, int start, int dir, int a
     cur += dir;
     if(in->mask[cur] & TRU)return false;
     if(in->mask[cur] & (ZRO | MASK)){//we are out; mark everything in between
-      for(int j = i; j >= 0; j--){
+      for(int j = i; j > 0; j--){
 	cur -= dir;	
 	if(!(BDR & in->mask[cur])){
 	  if(GEN((in->mask[cur])) != 0) //check if the cell already had a generation
@@ -223,7 +244,9 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
   //every point
     for(std::vector<int>::iterator i = markers.begin(); i != markers.end(); i++){
       cur = *i;
-      if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
+      //if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
+      mask[cur] -= MASK & mask[cur];
+      mask[cur] |= MSK;
       //every neighbour
       for(int j = 0; j < 6; j++){
 	cur_idx = cur + neighbours[j];

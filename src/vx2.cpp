@@ -134,7 +134,7 @@ struct main_module : public gl_wrapper_reciever {
       bool picked = crossection.pick(st.x, st.y, res);
       if(picked){
 	volume.set_cursor(res);
-	if(volume.tool == 1)crossection.update();
+	if(volume.tool != 0)crossection.update();
       }else{
 	volume.pick(st.x, st.height-st.y);
 	crossection.update(volume.vol, volume.cursor);

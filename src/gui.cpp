@@ -87,8 +87,14 @@ GuiContainer::GuiContainer(slices * _sl, GlPoints * _pnt):
 
 void GuiContainer::create(){
 
-  TwEnumVal modesEV[] = { {BROWSING, "Browse"}, {ADD_SEEDS, "Add seeds"} };
-  TwType modesType = TwDefineEnum("ModeType", modesEV, 2);
+  TwEnumVal modesEV[] = { 
+    {0, "Browse"}, 
+    {1, "Add seeds"},
+    {2, "Reseed"},
+    {3, "Deseed"},
+    {4, "Add truth"},
+    {5, "Clear"}};
+  TwType modesType = TwDefineEnum("ModeType", modesEV, 6);
 
   ///create type for colors... well; damnit? stupid.        
   std::vector<std::string> col = color_type();
@@ -238,8 +244,11 @@ void read_voxels(std::string in){
 
     FastVolume::t_tr tr = the_gui->pnt->vol.tr;
 
-     in+=V3f(128.0+tr.c_r, 128.0+tr.c_s, 128.0-tr.c_a);
-    in+=V3f(-tr.c_r, -tr.c_s, tr.c_a);
+    //  in+=V3f(128.0+tr.c_r, 128.0+tr.c_s, 128.0-tr.c_a);
+    //  in+=V3f(-tr.c_r, -tr.c_s, tr.c_a);
+
+    in+=V3f(128.0, 128.0, 128.0);
+
 
     stor.push_back(in);
   };
