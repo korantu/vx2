@@ -10,4 +10,7 @@ void gui_resize(int w, int h);
 void gui_stop();
 
 
+void read_voxels(std::string in, GlPoints * pnt);
+
+
 #endif // __GUI_H__

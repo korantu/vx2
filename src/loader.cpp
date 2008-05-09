@@ -15,6 +15,7 @@ Loader::Ex Loader::Ex::operator=(const Loader::Ex & to_copy){
 Loader::Loader(){
   res = NULL;
   total = 0;
+  cur_plane = VOLUME_PLANE; //use volume
 };
 
 Loader::~Loader(){
@@ -27,8 +28,7 @@ void get_mgz_info(std::string name){
 };
 
 
-//_ * Read-write
-int Loader::read(std::string name){
+int Loader::read(std::string name){ 
 
 
   gzFile fd; //file descriptor
@@ -103,7 +103,7 @@ int Loader::write(std::string name){
   
 void Loader::read_volume(FastVolume &vol_out){  
   try{
-  parse(res, vol_out, true);
+    parse(res, vol_out, true);
   }catch(const char * in){
     throw Ex(in);
   };
@@ -112,7 +112,7 @@ void Loader::read_volume(FastVolume &vol_out){
 
 void Loader::write_volume(FastVolume &vol_out){
   try{
-  parse(res, vol_out, false);
+    parse(res, vol_out, false);
   }catch(const char * in){
     throw Ex(in);
   };
@@ -123,12 +123,25 @@ void Loader::write_volume(FastVolume &vol_out){
 //volume operations
 
 int Loader::get(const FastVolume & in, int x, int y, int z){ 
-  return in.vol[FastVolume::getOffset(x,y,z)];
+  switch(cur_plane){
+  case MASK_PLANE:
+    return (MSK & in.mask[FastVolume::getOffset(x,y,z)]);
+  case VOLUME_PLANE:
+  default:
+    return in.vol[FastVolume::getOffset(x,y,z)];
+  };    
 }; 
 
 //set a voxel value
 void Loader::set(FastVolume & in, int x, int y, int z, int val){
-  in.vol[FastVolume::getOffset(x,y,z)] = val;
+  switch(cur_plane){
+  case MASK_PLANE:
+    in.mask[FastVolume::getOffset(x,y,z)] = (val > 0)?MSK:0;
+  break;
+  case VOLUME_PLANE:
+  default:
+    in.vol[FastVolume::getOffset(x,y,z)] = val;
+  };
 };
 
 
@@ -265,6 +278,8 @@ void Loader::parse(raw data, FastVolume & result, bool read){
 
    pos += unused_space_size;
 
+   int cur_data;
+
   if(!read){ //do some sanity checks before writing
     //if(depth != result.depth || width != result.width || height != result.height) throw "Dimensions are mismatched";  	
   };
@@ -279,26 +294,27 @@ void Loader::parse(raw data, FastVolume & result, bool read){
 	for (x = 0 ; x < width ; x++, i++)
 	  {
 	  	if(read){
-	    switch (type)
-	      {
-		      case MRI_INT: set(result, x, y, z, get_int(data, pos)); break;
-		      case MRI_SHORT: set(result, x, y, z, get_short(data, pos)); break;
-		      case MRI_UCHAR: set(result, x, y, z, get_char(data, pos)); break;
-		      case MRI_FLOAT: set(result, x, y, z, (int)get_float(data, pos)); break;
-		      case MRI_TENSOR: throw "Unable to read tensors";
-	      }
+		  switch (type)
+		    {
+		    case MRI_INT: set(result, x, y, z, get_int(data, pos)); break;
+		    case MRI_SHORT: set(result, x, y, z, get_short(data, pos)); break;
+		    case MRI_UCHAR: set(result, x, y, z, get_char(data, pos)); break;
+		    case MRI_FLOAT: set(result, x, y, z, (int)get_float(data, pos)); break;
+		    case MRI_TENSOR: throw "Unable to read tensors";
+		    }
 	  	}else{ //write
 	  		//if(get(result, x, y, z) != 0)printf("(%d,%d,%d,%d) ", x, y, z, get(result, x, y, z));
-	    switch (type)
-	      {
-		      case MRI_INT: set_int(data, get(result, x, y, z), pos); break;
-		      case MRI_SHORT: set_short(data, get(result, x, y, z), pos); break;
-		      case MRI_UCHAR: set_char(data, get(result, x, y, z), pos); break;
-		      case MRI_FLOAT: set_float(data, get(result, x, y, z), pos); break;
-		      case MRI_TENSOR: throw "Unable to read tensors";
-	      };
+		  cur_data = get(result, x, y, z);
+		  switch (type)
+		    {
+		    case MRI_INT: set_int(data, cur_data, pos); break;
+		    case MRI_SHORT: set_short(data, cur_data, pos); break;
+		    case MRI_UCHAR: set_char(data, cur_data, pos); break;
+		    case MRI_FLOAT: set_float(data, cur_data, pos); break;
+		    case MRI_TENSOR: throw "Unable to read tensors";
+		    };
 	  	};
-	  }
+	  };
       };
   };
 };

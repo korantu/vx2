@@ -18,6 +18,11 @@ public:
   Loader();
   ~Loader();
 
+  enum Plane{
+    MASK_PLANE = 0,
+    VOLUME_PLANE = 1
+  } cur_plane;
+
   //read with zlib
   int read_zlib(std::string);  
   int write_zlib(std::string); 
@@ -27,6 +32,10 @@ public:
  
   void read_volume(FastVolume &); //copy volume from mgh
   void write_volume(FastVolume &); //write volume to mgh TODO:make it const...
+
+  /* void load_mask(std::string name, unsigned char * buf);
+  void save_mask(std::string name, const unsigned char * buf);
+  */
 
   typedef char * raw;
 

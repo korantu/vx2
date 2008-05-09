@@ -201,13 +201,176 @@ struct main_module : public gl_wrapper_reciever {
 ///main function... built in main loop; the rest is done by regidtering callback functions.
 // Main
 
+#include <string>
+using namespace std;
+
+#define RASTER_HELP "vx2 raster lh.pial.asc rh.pial.asc template.mgz result.mgz\n"
+#define VOLUMES_HELP "vx2 volumes sample.mgz truth.mgz plus5.mgz all.mgz\n"
+#define STAT_HELP "vx2 stat brainmask.mgz attempt.mgz truth.mgz plus5.mgz all.mgz\n"
+#define LOAD_HELP "vx2 load to_load.mgz\n"
+
+//loading right hemisphere + left hemisphere and propagating around it
+void vitali(main_module & core, string left, string right, string sample, string result){
+  core.volume.load(sample.c_str());
+  read_voxels(left, & core.volume);
+  read_voxels(right, & core.volume);
+  core.volume.loader.cur_plane = Loader::MASK_PLANE;
+  core.volume.save(result.c_str());
+};
+
+void create_volumes(main_module & core, string sample, string truth, string truthPlus, string all){
+  core.volume.load(sample.c_str());
+  core.volume.loader.cur_plane = Loader::MASK_PLANE;
+  core.volume.load(truth.c_str());
+  core.volume.find_surface();
+  core.volume.vol.reseed();
+  core.volume.vol.propagate(1000, 0, 1000, 6); //+5 voxels
+  core.volume.save(truthPlus.c_str());
+  core.volume.vol.propagate(1000, 0, 1000, 100); //+everything
+  core.volume.save(all.c_str());
+  
+};
+
+void stat(main_module & core, string brainmask, string removed, string truth, string truthPlus, string all){
+  const int TR = 1;  //truth
+  const int TRP = 2; //5 mm layer
+  const int ALL = 4; // all but truth
+  const int RM = 8;  // removed by user
+  const int TRPT = 16; //5 mm layer truth & 10 mm layer mask
+
+  const int max = 256*256*256;
+
+  int wm = 0;
+  int wm_n = 0;
+  int csf = 0;
+
+  int wmgm = 0;
+  int wrongly_preserved = 0;       //wrongly preserved in 5 mm layer
+  int wrongly_preserved_top = 0;   //wrongly preserved in 5 mm layer and no deeper than 10 mm from mask bdr
+  int wrongly_preserved_all = 0;
+  int wrongly_removed = 0;
+  int correctly_removed = 0;
+  int wrongly_preserved_before = 0;
+  int wrongly_preserved_before_top = 0;
+  int wrongly_preserved_before_all = 0;
+
+  unsigned char * bits = new unsigned char[max];
+
+  core.volume.load(brainmask.c_str());
+  core.volume.find_surface();
+  printf("REP: %s\n", brainmask.c_str());
+  core.volume.loader.cur_plane = Loader::MASK_PLANE;
+  //load truth and compute wm
+  core.volume.load(truth.c_str());
+  for(int i = 0; i < max; i++)
+    if(MSK & core.volume.vol.mask[i]){
+      bits[i] |= TR;
+      wm += core.volume.vol.vol[i];
+      wm_n++;
+    };
+  wm /= wm_n; csf = (int)((float)wm * 0.4);
+  printf("REP: White matter intensity is %d, taking border %d\n", wm, csf);
+  //load truth+
+  core.volume.load(truthPlus.c_str());
+  core.volume.find_surface();
+  for(int i = 0; i < max; i++)
+    if((MSK & core.volume.vol.mask[i]) && 
+       (!(bits[i] & TR))){
+      bits[i] |= TRP;
+      wrongly_preserved_before++;
+      if( core.volume.vol.depth[i] < 10 ){
+	wrongly_preserved_before_top++;      
+	bits[i] |= TRPT;
+      };
+   };
+  //load all
+  core.volume.load(all.c_str());
+  for(int i = 0; i < max; i++)
+    if(MSK & core.volume.vol.mask[i]  && 
+       (!(bits[i] & TR))){
+      bits[i] |= ALL;
+      wrongly_preserved_before_all++;
+    };
+
+  //load removed
+  core.volume.load(removed.c_str());
+  for(int i = 0; i < max; i++)
+    if(MSK & core.volume.vol.mask[i])bits[i] |= RM;
+
+  //counting itself
+  for(int i = 0; i < max; i++){
+    if(core.volume.vol.vol[i] > csf){
+      if(bits[i] & TR)wmgm++;
+      if((bits[i] & (TR | RM)) == (TR | RM))wrongly_removed++;
+      if((bits[i] & (TRP | RM)) == TRP)wrongly_preserved++;
+      if((bits[i] & (TRPT | RM)) == TRPT)wrongly_preserved_top++;
+      if((bits[i] & (ALL | RM)) == ALL)wrongly_preserved_all++;
+      if((bits[i] & (ALL | RM)) == (ALL | RM))correctly_removed++;
+    };
+  };
+
+
+  //reporting:
+  printf("REP: %d, %d, %d, %d,  %d,  %d, %d, %d\n", wmgm, wrongly_removed, wrongly_preserved_before, wrongly_preserved_before_top, wrongly_preserved_before_all, wrongly_preserved, wrongly_preserved_top, wrongly_preserved_all);
+
+  delete bits;
+};
+
 int main(int argc, char ** argv) 
 {
   main_module core;
   
-  color_init();
 
-  if( ! core.volume.load("brainmask.mgz") )return -1;
+  //let's check what those aliens are up to:
+  if(argc > 1){
+    if(strstr(argv[1], "raster")){
+      if(argc != 6){
+	printf(RASTER_HELP);
+	return 1;
+      }else{
+	vitali(core, argv[2], argv[3], argv[4], argv[5]);
+	return 0; //all done.
+      };
+    };
+
+    if(strstr(argv[1], "volumes")){
+      if(argc != 6){
+	printf(VOLUMES_HELP);
+	return 1;
+      }else{
+	create_volumes(core, argv[2], argv[3], argv[4], argv[5]);
+	return 0; //all done.
+      };
+    };
+
+    if(strstr(argv[1], "stat")){
+      if(argc != 7){
+	printf(STAT_HELP);
+	return 1;
+      }else{
+	stat(core, argv[2], argv[3], argv[4], argv[5], argv[6]);
+	return 0; //all done.
+      };
+    };
+
+    if(strstr(argv[1], "load")){
+      if(argc != 3){
+	printf(LOAD_HELP);
+	return 1;
+      }else{
+	core.volume.load(argv[2]); //just continue as normal
+      };
+    };
+
+  }else{
+    printf("No command given; trying to use default brainmask.mgz\n"); //else, just load default stuff
+    if( ! core.volume.load(NULL) )return -1;
+  };
+
+  core.volume.find_surface();
+
+  color_init();
+;
   
    gl_init(&core);
    gui_start( &core.crossection, &core.volume);

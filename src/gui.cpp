@@ -38,9 +38,13 @@ struct GuiContainer{
   static void TW_CALL get_level(void * value, void * );
   static void TW_CALL set_level(const void * value, void * );
   static void TW_CALL load_file( void * );
-  static void TW_CALL load_file_truth( void * );
   static void TW_CALL save_file( void * );
+  static void TW_CALL save_file_as( void * );
+  static void TW_CALL load_mask( void * );
+  static void TW_CALL save_mask( void * );
+  static void TW_CALL load_file_truth( void * );
   static void TW_CALL apply_mask( void * );
+  static void TW_CALL reseed( void * );
   static void TW_CALL switch_crossections( void * );
   static void TW_CALL step( void * );
   static void TW_CALL undo( void * );
@@ -87,6 +91,12 @@ GuiContainer::GuiContainer(slices * _sl, GlPoints * _pnt):
 
 void GuiContainer::create(){
 
+  TwEnumVal ioEV[] = {
+    {0, "Mask"},
+    {1, "Volume"}
+  };
+  TwType ioType = TwDefineEnum("IoType", ioEV, 2);
+
   TwEnumVal modesEV[] = { 
     {0, "Browse"}, 
     {1, "Add seeds"},
@@ -114,6 +124,8 @@ void GuiContainer::create(){
   pnt->tw_pnt = 1.0;
   TwAddButton(bar, "", load_file, NULL, "label='Load'");
   TwAddButton(bar, "", save_file, NULL, "label='Save'");
+  TwAddButton(bar, "", save_file_as, NULL, "label='Save As'");
+  TwAddVarRW(bar, "IO Type", ioType, &pnt->loader.cur_plane, "");
   TwAddSeparator(bar, "Operation.", NULL);
   TwAddVarRW(bar, "", TW_TYPE_DOUBLE, &pnt->tw_pnt, " label='Point size' min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
   TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_transparency, " label='Transparency' min=0.1 max=1 step=0.01 keyIncr=d keyDecr=D help='Transparency' ");
@@ -139,13 +151,14 @@ void GuiContainer::create(){
   TwAddSeparator(bar, "Editing.", NULL);
   //TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
   TwAddVarRW(bar, "Editing tool", modesType, &pnt->tool, "keyIncr=T keyDecr=t");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=6 step=1 label='Tool size' help='Point size' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=400 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=4 step=1 label='Tool size' help='Point size' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead.' help='Skip this many voxels in search for suitable areas.' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &depth, " min=0 max=256 step=1 label='Depth' help='Go no deeper than this value. 0 means no limit' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &iterations, " min=1 max=400 step=10 label='Iterations.' help='Iterations per button press' ");
   TwAddButton(bar, "", step, NULL, "label='Step' key='g'");
   TwAddButton(bar, "", undo, NULL, "label='Undo' key='z'");
+  TwAddButton(bar, "", reseed, NULL, "label='Reseed'");
   TwAddButton(bar, "", apply_mask, NULL, "label='Apply mask'");
   TwAddButton(bar, "", load_file_truth, NULL, "label='Load truth'");
 
@@ -186,6 +199,7 @@ void TW_CALL GuiContainer::load_file( void * UserData){
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
     the_gui->pnt->load(in.c_str());
+    the_gui->pnt->find_surface();
   };
 };
 
@@ -194,31 +208,55 @@ void TW_CALL GuiContainer::load_file( void * UserData){
 #include "v3.h"
 #include "stdio.h"
 
+int dead = 0;
 
-bool refine(V3f & v0, V3f & v1, V3f & v2){
+bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
   V3f v[3] = {v0, v1, v2};
+  bool good; //mark what voxels are inside as good
+
+  for(int i = 0; i < 3; i++){ ///each vertex
+      
+    /*     V3f vec((vtx&1)?ceil(v[i].x):floor(v[i].x), //check neighbouring voxels
+	      (vtx&2)?ceil(v[i].y):floor(v[i].y),
+	      (vtx&4)?ceil(v[i].z):floor(v[i].z));
+    */
+    
+    V3f vec((int)v[i].x, (int)v[i].y, (int)v[i].z);
+      V3f dir = vec-v[i];
+      good = (dir.dot(n)<0);
+
+      int cur = pnt->vol.getOffset(v[i].x, v[i].y, v[i].z);
+      if(!(pnt->vol.mask[cur] & TRU)){
+	pnt->vol.mask[cur] |= TRU;
+	if(good)pnt->vol.mask[cur] |= MSK;
+	if((pnt->vol.mask[cur] & MASK) 
+	   && (pnt->vol.vol[cur] > 35))dead++; //count intersecting pixels
+      };
+    };
   
-  for(int i = 0; i < 3; i++){
-    int cur = the_gui->pnt->vol.getOffset(v->x, v->y, v->z);
-    the_gui->pnt->vol.mask[cur] |= TRU;
-  };
   //check if the refinement is needed, i.e. tris are too big ( > 0.5 voxels )
-  if((v0-v1).length2() > 0.3 ||
-     (v1-v2).length2() > 0.3 ||
-     (v2-v0).length2() > 0.3){
+  if((v0-v1).length2() > 1.0 ||
+     (v1-v2).length2() > 1.0 ||
+     (v2-v0).length2() > 1.0){
     V3f o0 = (v0+v1)/2;
     V3f o1 = (v1+v2)/2;
     V3f o2 = (v2+v0)/2;
    
     //if triangles are too big, render smaller ones...
-    refine( v0, o0, o2);
-    refine( o0, v1, o1);
-    refine( o1, v2, o2);
-    refine( o0, o1, o2);
+    refine( v0, o0, o2, pnt, n);
+    refine( o0, v1, o1, pnt, n);
+    refine( o1, v2, o2, pnt, n);
+    refine( o0, o1, o2, pnt, n);
   }; 
+
+  
 };
 
-void read_voxels(std::string in){
+void read_voxels(std::string in, GlPoints * pnt){
+  V3f center(0,0,0);
+  int N = 0;
+
+  dead = 0;
   FILE * f = fopen(in.c_str(), "ro");
   std::vector<V3f> stor;
 
@@ -251,21 +289,48 @@ void read_voxels(std::string in){
 
 
     stor.push_back(in);
+    center+=in;
+    N++;
   };
   //ok, now all the correct points in tri.
   //read tris now
   V3f m[3];
+  //  std::vector<int> tristor; //triangle storage
   for(int i = 0; i < tris; i++){
     int a, b, c, zero;
     fscanf(f, "%d %d %d %d\n", &a, &b, &c, &zero);
     m[0]=stor[a];
     m[1]=stor[b];
     m[2]=stor[c];
-    refine(m[0], m[1], m[2]);
+  
+    V3f n; n.cross(m[1]-m[0], m[2]-m[0]);
+    n /= -n.length(); //normal - outside
+
+    refine(m[0], m[1], m[2], pnt,  n);
   };
  
   fclose(f);
   printf("stor size is:%d\n", stor.size());
+  printf("%d pixels false positive.\n", dead);
+
+  printf("Trying to fill it\n");
+   center /= N; //this is the average;
+   printf("The seed is %f %f %f; %d in total;  so what? \n", center.x, center.y, center.z, N);
+   int cur = pnt->vol.getOffset(center.x, center.y, center.z);
+   pnt->vol.mask[cur] |= BDR;
+   pnt->vol.markers.push_back(cur);
+  
+  pnt->vol.propagate(1000, 0, 1000, 400); //propagate everywhere from centerpoint  
+
+  //remove truth mask as not propagating anymore
+  for(int i = 0; i < 256*256*256; i++){
+    pnt->vol.mask[i] -= (pnt->vol.mask[i] & TRU);
+  };
+
+  pnt->vol.updated = true;
+
+  
+  
 };
 
 void TW_CALL GuiContainer::load_file_truth( void * UserData){
@@ -273,7 +338,7 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData){
   std::string in = getFile();
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
-    read_voxels(in);
+    read_voxels(in, the_gui->pnt);
   };
 };
 
@@ -284,13 +349,49 @@ void TW_CALL GuiContainer::switch_crossections( void * UserData){
 
 
 void TW_CALL GuiContainer::save_file( void * UserData){
-  printf("Trying to load a file.\n");
+  printf("Trying to save a default file.\n");
+    the_gui->pnt->save(NULL);
+};
+
+
+void TW_CALL GuiContainer::save_file_as( void * UserData){
+  printf("Trying to save a file.\n");
   std::string in = putFile();
   if(in.length() > 0){
     printf("indeed, got %s to save in.\n", in.c_str());
     the_gui->pnt->save(in.c_str());
   };
 };
+
+
+//saving and loading masks
+
+void TW_CALL GuiContainer::save_mask( void * UserData){
+  printf("UnImplemented.\n");
+  std::string in = putFile();
+  if(in.length() > 0){
+    //  printf("indeed, got %s to save in.\n", in.c_str());
+    //the_gui->pnt->loader.save_mask(in, the_gui->pnt->vol.mask);
+  };
+};
+
+
+void TW_CALL GuiContainer::load_mask( void * UserData){
+  printf("UnImplemented.\n");
+  std::string in = getFile();
+  if(in.length() > 0){
+    printf("indeed, got %s to save in.\n", in.c_str());
+    // the_gui->pnt->loader.load_mask(in, the_gui->pnt->vol.mask);
+  };
+};
+
+
+void TW_CALL GuiContainer::reseed( void * UserData){
+  printf("Reseed\n");
+  the_gui->pnt->vol.reseed();
+  the_gui->pnt->vol.updated = true;
+};
+
 
 void TW_CALL GuiContainer::apply_mask( void * UserData){
   printf("Apply mask\n");
@@ -306,6 +407,7 @@ void TW_CALL GuiContainer::step( void * UserData){
 
 void TW_CALL GuiContainer::undo( void *){
   the_gui->pnt->vol.undo();
+  the_gui->pnt->vol.updated = true;
 };
 
 //slices

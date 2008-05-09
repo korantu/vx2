@@ -237,7 +237,7 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
   std::vector<int> res;
   int cur_idx;  
 
-  if(undo_buffer.back())undo_buffer.push_back(0);
+  if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
 
   for(int iter = 0; iter < times; iter++){
     res.clear();
@@ -272,7 +272,7 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
   };
   if(cur_gen > (GEN_MAX-3))downshift(MASK);
 
-  if(undo_buffer.back())undo_buffer.push_back(0);
+  if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
 
   //reseed();
 

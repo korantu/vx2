@@ -1,4 +1,4 @@
-CXXFLAGS := -DUSE_TW -g -O2 -I../../include -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL 
+CXXFLAGS := -DUSE_TW -g -O3 -I../../include -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL 
 VX2 := navigator.o \
 	v3tools.o \
 	fastvolume.o \

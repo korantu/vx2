@@ -26,6 +26,7 @@ void GlPoints::set_level(float l){
     for( std::vector<int>::iterator i = cur.begin(); i != cur.end(); i++)
       {
 	int cur_idx = *i;
+	if( (cur_idx > 255*255*255) || (cur_idx < 1))continue;
 	if((vol.depth[cur_idx]> cur_depth) && (vol.vol[cur_idx]>=1) && (vol.vol[cur_idx]<=200)   ){
 	  vol.depth[cur_idx] = cur_depth;
 	  list[cur_depth].push_back(cur_idx);
@@ -41,21 +42,18 @@ void GlPoints::set_level(float l){
   };
 };
 
-
+std::string default_name("brainmask.mgz");
 
 bool GlPoints::load(const char * in){
+  if(in)default_name = std::string(in);
   try{
-    int cnt = loader.read(std::string(in));
+    int cnt = loader.read(default_name);
     printf("Read %d bytes.\n", cnt);
 
     vol.reset();
 
     loader.read_volume(vol);
 
-    set_level(1);
-    for(int ll = 1; ll < 10; ll++)
-      printf("found %d points at level %d.\n", list[ll].size(), ll);
-    
   }catch(const Loader::Ex & err){
     printf("Problem occured: %s\n", err.reason.c_str());
     return false;
@@ -63,10 +61,17 @@ bool GlPoints::load(const char * in){
   return true;
 };
 
+void GlPoints::find_surface(){
+  set_level(1);
+  for(int ll = 1; ll < 10; ll++)
+    printf("found %d points at level %d.\n", list[ll].size(), ll);
+};
+
 bool GlPoints::save(const char * out){
+  if(out)default_name = std::string(out);
   try {
     loader.write_volume(vol); //save data from volume into the loader
-    loader.write(std::string(out));
+    loader.write(default_name);
   }catch(const Loader::Ex & err){
     printf("Problem occured: %s\n", err.reason.c_str());
     return false;
@@ -106,12 +111,13 @@ void GlPoints::set_projection(){
   glDisable(GL_LIGHTING);
 
   //draw to get the idea of the whole thing.
-  glBegin(GL_LINES);
+  /* DISABLE LARGE CROSS FOR NOW
+    glBegin(GL_LINES);
   glColor3f(1,0,0); glVertex3f(1,0,0); glVertex3f(-1,0,0);
   glColor3f(0,1,0); glVertex3f(0,1,0); glVertex3f(0,-1,0);
   glColor3f(0,0,1); glVertex3f(0,0,1); glVertex3f(0,0,-1);
   glEnd();
-
+  */
   glScalef(2.0/256.0, 2.0/256.0, 2.0/256.0);
   glTranslatef(-128.0, -128.0, -128.0);
 
@@ -127,7 +133,7 @@ void GlPoints::draw(V3f zaxis){
   int cursor_size = 10;
 
   ///draw cursor
-  glBegin(GL_LINES);
+   glBegin(GL_LINES);
   glColor3f(1,0,0); glVertex3f(cursor.x+cursor_size,cursor.y,cursor.z); glVertex3f(cursor.x-cursor_size,cursor.y,cursor.z);
   glColor3f(0,1,0); glVertex3f(cursor.x,cursor.y+cursor_size,cursor.z); glVertex3f(cursor.x,cursor.y-cursor_size,cursor.z);
   glColor3f(0,0,1); glVertex3f(cursor.x,cursor.y,cursor.z+cursor_size); glVertex3f(cursor.x,cursor.y,cursor.z-cursor_size);
@@ -211,7 +217,8 @@ void GlPoints::apply(){
   for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++)
     if(vol.mask[i])vol.vol[i]=0;
   vol.reset();
-  set_level(1);
+  //set_level(1);
+  find_surface();
 };
 
 void GlPoints::set_cursor(V3f c){

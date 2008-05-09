@@ -45,6 +45,7 @@ GlPoints(): cursor(128,128,128), tool(0), cur_level(1), tw_transparency(0.5) {
   void findSurface(int n);
 
   bool load(const char *);
+  void find_surface(); ///find the several layers of the loaded volume; not always needed;
   bool save(const char *);
   void draw(V3f z);
   void set_projection();
