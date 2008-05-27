@@ -9,7 +9,7 @@
 
 struct GlPoints {
 
-GlPoints(): cursor(128,128,128), tool(0), cur_level(1), tw_transparency(0.5) {
+GlPoints(): cursor(128,128,128), tool(0), cur_level(1), tw_transparency(0.35) {
   tool = 0;
   tool_size=1;
   };
@@ -52,6 +52,8 @@ GlPoints(): cursor(128,128,128), tool(0), cur_level(1), tw_transparency(0.5) {
   void point_size(float _pnt){pnt = _pnt;};
 
   void set_cursor(V3f);
+
+  void update();
 
   void apply();
 

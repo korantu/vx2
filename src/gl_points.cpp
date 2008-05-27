@@ -128,6 +128,37 @@ void GlPoints::set_projection(){
   glGetIntegerv( GL_VIEWPORT, (GLint *)viewport );
 };
 
+std::vector<int> the_markers;
+std::vector<int> the_marked;
+
+
+//now, where do we call this thing from.....
+//adding more connections really harms...
+
+void GlPoints::update(){
+  the_markers = vol.markers; //just replace with the current seeds.
+  the_marked.clear(); //remove whatever marked volume we had
+  for(int i = 1; i < 256*256*256;i++){
+    if(vol.mask[i] & MSK){ //then see if it is border... ok?
+    
+      for(int j = 0; j < 6; j++){
+	if(!(MASK & vol.mask[i+FastVolume::neighbours[j]])){
+	  //if we have a neighbour outside, then add to the list; 
+	  the_marked.push_back(i);
+	  j = 42; //make fucking sure get out of here; 
+	  //break; //would also work.
+	};
+      };
+      
+    };
+
+  };
+  printf("seeds: %d, passive border: %d\n", 
+	 the_markers.size(), 
+	 the_marked.size());
+
+};
+
 void GlPoints::draw(V3f zaxis){
 
   int cursor_size = 10;
@@ -155,7 +186,9 @@ void GlPoints::draw(V3f zaxis){
   int cur_depth;
   glPointSize(nicety_coefficient*1.0*pnt);
   glBegin(GL_POINTS);
-  for(std::vector<int>::iterator i = vol.markers.begin(); i != vol.markers.end(); i++){
+
+  //markers
+  for(std::vector<int>::iterator i = the_markers.begin(); i != the_markers.end(); i++){
     cur_depth = vol.depth[*i]; 
     if(cur_depth < 2)continue; //do not show top layer
      vol.getCoords(*i, x,y,z);
@@ -163,6 +196,17 @@ void GlPoints::draw(V3f zaxis){
      glColor3f((float)cur_depth*20.0/200, 0, (200.0-cur_depth*20.0)/200.0);
      glVertex3i(x,y,z);
   };
+
+  //usual stuff
+  for(std::vector<int>::iterator i = the_marked.begin(); i != the_marked.end(); i++){
+    cur_depth = vol.depth[*i]; 
+    if(cur_depth < 2)continue; //do not show top layer
+     vol.getCoords(*i, x,y,z);
+     //float pnt_col =  vol.vol[*i]/300.0;
+     glColor3f((float)cur_depth*20.0/200, (200.0-cur_depth*20.0)/200.0, 0);
+     glVertex3i(x,y,z);
+  };
+
   glEnd();
  
   glEnable (GL_BLEND); 

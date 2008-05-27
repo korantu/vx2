@@ -25,6 +25,7 @@ struct GuiContainer{
   int amount;
   int depth;
   int iterations;
+  int propagator_type; //what kind of propagation do we want
 
   //2d options
   int size;
@@ -32,12 +33,15 @@ struct GuiContainer{
   int zoom;
   float coverage;
 
+  
+
 
   /* Helper functions */
 
   static void TW_CALL get_level(void * value, void * );
   static void TW_CALL set_level(const void * value, void * );
   static void TW_CALL load_file( void * );
+  static void TW_CALL test_shape( void * );
   static void TW_CALL save_file( void * );
   static void TW_CALL save_file_as( void * );
   static void TW_CALL load_mask( void * );
@@ -45,7 +49,9 @@ struct GuiContainer{
   static void TW_CALL load_file_truth( void * );
   static void TW_CALL apply_mask( void * );
   static void TW_CALL reseed( void * );
+  static void TW_CALL kill_seeds( void * );
   static void TW_CALL switch_crossections( void * );
+  static void TW_CALL set_band( void * );
   static void TW_CALL step( void * );
   static void TW_CALL undo( void * );
   static void TW_CALL get_size(void * value, void * );
@@ -75,15 +81,16 @@ GuiContainer::GuiContainer(slices * _sl, GlPoints * _pnt):
   sl(_sl), 
   pnt(_pnt), 
   level(3), 
-  threshold(20), 
+  threshold(40), 
   generation(3), 
-  amount(5), 
+  amount(2), 
   iterations(2),
   size(100),
   scheme(0),
   zoom(1),
   coverage(0.25),
-  depth(10)
+  depth(10),
+  propagator_type(1)
 {
   bar = TwNewBar("Options");
 };
@@ -91,6 +98,8 @@ GuiContainer::GuiContainer(slices * _sl, GlPoints * _pnt):
 
 void GuiContainer::create(){
 
+
+  // Defining enums for different actions... 
   TwEnumVal ioEV[] = {
     {0, "Mask"},
     {1, "Volume"}
@@ -105,6 +114,11 @@ void GuiContainer::create(){
     {4, "Add truth"},
     {5, "Clear"}};
   TwType modesType = TwDefineEnum("ModeType", modesEV, 6);
+
+  TwEnumVal propagatorsEV[] = { 
+    {0, "Jump"}, 
+    {1, "Similarity"}};
+  TwType propagatorType = TwDefineEnum("PropagatorsType", propagatorsEV, 2);
 
   ///create type for colors... well; damnit? stupid.        
   std::vector<std::string> col = color_type();
@@ -125,6 +139,7 @@ void GuiContainer::create(){
   TwAddButton(bar, "", load_file, NULL, "label='Load'");
   TwAddButton(bar, "", save_file, NULL, "label='Save'");
   TwAddButton(bar, "", save_file_as, NULL, "label='Save As'");
+  TwAddButton(bar, "", test_shape, NULL, "label='Test Shape'");
   TwAddVarRW(bar, "IO Type", ioType, &pnt->loader.cur_plane, "");
   TwAddSeparator(bar, "Operation.", NULL);
   TwAddVarRW(bar, "", TW_TYPE_DOUBLE, &pnt->tw_pnt, " label='Point size' min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
@@ -152,15 +167,19 @@ void GuiContainer::create(){
   //TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
   TwAddVarRW(bar, "Editing tool", modesType, &pnt->tool, "keyIncr=T keyDecr=t");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=6 step=1 label='Tool size' help='Point size' ");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=400 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=1000 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead.' help='Skip this many voxels in search for suitable areas.' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &depth, " min=0 max=256 step=1 label='Depth' help='Go no deeper than this value. 0 means no limit' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &iterations, " min=1 max=400 step=10 label='Iterations.' help='Iterations per button press' ");
-  TwAddButton(bar, "", step, NULL, "label='Step' key='g'");
-  TwAddButton(bar, "", undo, NULL, "label='Undo' key='z'");
-  TwAddButton(bar, "", reseed, NULL, "label='Reseed'");
-  TwAddButton(bar, "", apply_mask, NULL, "label='Apply mask'");
-  TwAddButton(bar, "", load_file_truth, NULL, "label='Load truth'");
+  TwAddVarRW(bar, "Prop. type", propagatorType, &propagator_type, "");
+  TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &(pnt->vol.use_scope), " label='Restrict to 2D' ");
+  TwAddButton(bar, "", set_band, NULL, " label='Band' key='b' ");
+  TwAddButton(bar, "", step, NULL, " label='Step' key='g' ");
+  TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' ");
+  TwAddButton(bar, "", reseed, NULL, " label='Reseed' ");
+  TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' ");
+  TwAddButton(bar, "", apply_mask, NULL, " label='Apply mask' ");
+  TwAddButton(bar, "", load_file_truth, NULL, " label='Load truth' ");
 
   TwAddSeparator(bar, "File.", NULL);
   ///and now the slice control:
@@ -198,9 +217,35 @@ void TW_CALL GuiContainer::load_file( void * UserData){
   std::string in = getFile();
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
+    set_current_file(in);
     the_gui->pnt->load(in.c_str());
     the_gui->pnt->find_surface();
   };
+  the_gui->pnt->update(); //and make sure all is shown up.....
+
+};
+
+void TW_CALL GuiContainer::test_shape( void * UserData){
+  printf("Coming up with a surface.\n");
+  int adj = 0;
+  int gmwm = 0;
+  the_gui->pnt->vol.reset();
+  for(int i = 0; i < 255*255*255; i++)the_gui->pnt->vol.vol[i]=0;
+  for(int x = -60; x< 60; x++)
+    for(int y = -60; y< 60; y++)
+      for(int z = -60; z< 60; z++){
+	int dist = 60-sqrtf(x*x+y*y+z*z);
+	if(dist < 0 && dist >= -5)adj++; 
+	if(dist < 0)dist=0;
+	if(dist>0){
+	  dist+=50;
+	  gmwm++;
+	};
+	int offset = the_gui->pnt->vol.getOffset(x+128,y+128, z+128);
+	the_gui->pnt->vol.vol[offset] = dist;
+      };
+  the_gui->pnt->find_surface();
+  printf("gmwm: %d, adj: %d\n", gmwm, adj);
 };
 
 //**//
@@ -209,6 +254,7 @@ void TW_CALL GuiContainer::load_file( void * UserData){
 #include "stdio.h"
 
 int dead = 0;
+bool half = false; //incude > 50% voxels
 
 bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
   V3f v[3] = {v0, v1, v2};
@@ -224,8 +270,9 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
     V3f vec((int)v[i].x, (int)v[i].y, (int)v[i].z);
       V3f dir = vec-v[i];
       good = (dir.dot(n)<0);
+      if(!half)good = true;
 
-      int cur = pnt->vol.getOffset(v[i].x, v[i].y, v[i].z);
+      int cur = pnt->vol.getOffset(floor(v[i].x), floor(v[i].y), floor(v[i].z));
       if(!(pnt->vol.mask[cur] & TRU)){
 	pnt->vol.mask[cur] |= TRU;
 	if(good)pnt->vol.mask[cur] |= MSK;
@@ -235,9 +282,9 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
     };
   
   //check if the refinement is needed, i.e. tris are too big ( > 0.5 voxels )
-  if((v0-v1).length2() > 1.0 ||
-     (v1-v2).length2() > 1.0 ||
-     (v2-v0).length2() > 1.0){
+  if((v0-v1).length2() > 0.2 ||
+     (v1-v2).length2() > 0.2 ||
+     (v2-v0).length2() > 0.2){
     V3f o0 = (v0+v1)/2;
     V3f o1 = (v1+v2)/2;
     V3f o2 = (v2+v0)/2;
@@ -252,9 +299,12 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
   
 };
 
-void read_voxels(std::string in, GlPoints * pnt){
+void read_voxels(std::string in, GlPoints * pnt, bool _half = false){
   V3f center(0,0,0);
   int N = 0;
+
+  half = _half;
+  printf("Including %s voxles\n", half?">50% occupancy":"all");
 
   dead = 0;
   FILE * f = fopen(in.c_str(), "ro");
@@ -285,7 +335,7 @@ void read_voxels(std::string in, GlPoints * pnt){
     //  in+=V3f(128.0+tr.c_r, 128.0+tr.c_s, 128.0-tr.c_a);
     //  in+=V3f(-tr.c_r, -tr.c_s, tr.c_a);
 
-    in+=V3f(128.0, 128.0, 128.0);
+    in+=V3f(128, 128.9, 128);
 
 
     stor.push_back(in);
@@ -328,12 +378,14 @@ void read_voxels(std::string in, GlPoints * pnt){
   };
 
   pnt->vol.updated = true;
+  pnt->update(); //and make sure all is shown up.....
 
   
   
 };
 
 void TW_CALL GuiContainer::load_file_truth( void * UserData){
+
   printf("Trying to load a file.\n");
   std::string in = getFile();
   if(in.length() > 0){
@@ -380,9 +432,14 @@ void TW_CALL GuiContainer::load_mask( void * UserData){
   printf("UnImplemented.\n");
   std::string in = getFile();
   if(in.length() > 0){
-    printf("indeed, got %s to save in.\n", in.c_str());
+    printf("indeed, got %s to load.\n", in.c_str());
+    TwDefine((std::string("") + " GLOBAL help='" + in + "' ").c_str()); // Change global help to the file being edited 
+    
     // the_gui->pnt->loader.load_mask(in, the_gui->pnt->vol.mask);
   };
+
+  the_gui->pnt->update(); //and make sure all is shown up.....
+
 };
 
 
@@ -390,6 +447,23 @@ void TW_CALL GuiContainer::reseed( void * UserData){
   printf("Reseed\n");
   the_gui->pnt->vol.reseed();
   the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+
+};
+
+void TW_CALL GuiContainer::kill_seeds( void * UserData){
+  printf("Kill seeds\n");
+  for(int i = 0; i < 256*256*256; i++){
+    if(the_gui->pnt->vol.mask[i] & BDR){
+      the_gui->pnt->vol.mask[i] -= (the_gui->pnt->vol.mask[i] & MASK);
+    };
+  };
+
+  the_gui->pnt->vol.markers.clear();
+
+  the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+
 };
 
 
@@ -397,17 +471,31 @@ void TW_CALL GuiContainer::apply_mask( void * UserData){
   printf("Apply mask\n");
   the_gui->pnt->apply();
   the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+
+};
+
+void TW_CALL GuiContainer::set_band( void * UserData){
+  the_gui->pnt->vol.set_band();
 };
 
 void TW_CALL GuiContainer::step( void * UserData){
-  the_gui->pnt->vol.propagate(the_gui->threshold, the_gui->amount, the_gui->depth, the_gui->iterations);
+  // TODO act upon CASE
+  switch(the_gui->propagator_type){
+  case 0: // jump
+    the_gui->pnt->vol.propagate(the_gui->threshold, the_gui->amount, the_gui->depth, the_gui->iterations);
+    break;
+  case 1: //similarity
+    the_gui->pnt->vol.propagate_spread(the_gui->threshold, the_gui->amount, the_gui->depth, the_gui->iterations);
+  };
   the_gui->pnt->vol.updated = true;
-  
+  the_gui->pnt->update(); //and make sure all is shown up.....
 };
 
 void TW_CALL GuiContainer::undo( void *){
   the_gui->pnt->vol.undo();
   the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
 };
 
 //slices
@@ -494,6 +582,11 @@ void gui_resize(int x, int y){
 void gui_stop(){
   if(the_gui)delete the_gui;
   TwTerminate();
+};
+
+void set_current_file(std::string in){
+    TwDefine((std::string("") + " GLOBAL help='Now editing " + in + "' ").c_str()); // Change global help to the file being edited 
+  
 };
 
 

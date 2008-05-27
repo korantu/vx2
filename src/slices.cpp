@@ -197,6 +197,17 @@ void slices::setup_projection(){
 
 void slices::update(FastVolume & in, V3f _center)//, V3f _dx, V3f _dy, V3f _dz){
 {
+  //ok, setting minimum und maximum
+  in.min_x = _center.x - 40;
+  in.max_x = _center.x + 40;
+  in.min_y = _center.y - 40;
+  in.max_y = _center.y + 40;
+  in.min_z = _center.z - 40;
+  in.max_z = _center.z + 40;
+  
+  //cool. whenther or not to use it is defined in
+  //gui.cpp
+
   ColorMapper m;
   scheme_fill(m, this->scheme);
   //the_volume = &in;

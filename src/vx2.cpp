@@ -69,7 +69,7 @@ struct main_module : public gl_wrapper_reciever {
 
     V3f z(){return V3f(ex.z, ey.z, ez.z);};
 
-   /// first argument - rotation over x axis;
+    /// first argument - rotation over x axis;
     /// second - over y axis
     /// which means they are inverted for mouse navigation.
     void rot(float x, float y){
@@ -206,14 +206,18 @@ using namespace std;
 
 #define RASTER_HELP "vx2 raster lh.pial.asc rh.pial.asc template.mgz result.mgz\n"
 #define VOLUMES_HELP "vx2 volumes sample.mgz truth.mgz plus5.mgz all.mgz\n"
-#define STAT_HELP "vx2 stat brainmask.mgz attempt.mgz truth.mgz plus5.mgz all.mgz\n"
+#define STAT_HELP "vx2 stat brainmask.mgz attempt.mgz truth.mgz plus5.mgz all.mgz SS080_name res.txt\n"
 #define LOAD_HELP "vx2 load to_load.mgz\n"
+#define DIFF_HELP "vx2 diff a.mgz b.mgz #tell the difference between 2 masks.\n"
+#define JOIN_HELP "vx2 join a.mgz b.mgz res.mgz #join masks in a&b into res.\n"
+#define ALL_HELP "vx2 all SS056_IDX # generate volumes and statistics for the patient\n"
+#define HELP_HELP ((string("")+RASTER_HELP+VOLUMES_HELP+STAT_HELP+ALL_HELP+DIFF_HELP+LOAD_HELP).c_str())  
 
 //loading right hemisphere + left hemisphere and propagating around it
-void vitali(main_module & core, string left, string right, string sample, string result){
+void vitali(main_module & core, string left, string right, string sample, string result, bool _half = false){
   core.volume.load(sample.c_str());
-  read_voxels(left, & core.volume);
-  read_voxels(right, & core.volume);
+  read_voxels(left, & core.volume, _half);
+  read_voxels(right, & core.volume, _half);
   core.volume.loader.cur_plane = Loader::MASK_PLANE;
   core.volume.save(result.c_str());
 };
@@ -224,19 +228,23 @@ void create_volumes(main_module & core, string sample, string truth, string trut
   core.volume.load(truth.c_str());
   core.volume.find_surface();
   core.volume.vol.reseed();
-  core.volume.vol.propagate(1000, 0, 1000, 6); //+5 voxels
+  core.volume.vol.propagate(1000, 0, 1000, 2); //1 layer
+  core.volume.save((truth+"_").c_str()); //save stuff
+  core.volume.vol.propagate(1000, 0, 1000, 5); //+5 voxels
   core.volume.save(truthPlus.c_str());
   core.volume.vol.propagate(1000, 0, 1000, 100); //+everything
   core.volume.save(all.c_str());
-  
 };
 
-void stat(main_module & core, string brainmask, string removed, string truth, string truthPlus, string all){
-  const int TR = 1;  //truth
-  const int TRP = 2; //5 mm layer
-  const int ALL = 4; // all but truth
-  const int RM = 8;  // removed by user
-  const int TRPT = 16; //5 mm layer truth & 10 mm layer mask
+
+
+void stat(main_module & core, string brainmask, string removed, string truth, string truthPlus, string all, string any_name, string res){
+  const int TR = 1;     // truth
+  const int TRP = 2;    // 5 mm layer
+  const int ALL = 4;    // all but truth
+  const int RM = 8;     // removed by user
+  const int TRPT = 16;  // 5 mm layer truth & 10 mm layer mask
+   const int TRL = 32;   // truth with one layer
 
   const int max = 256*256*256;
 
@@ -245,14 +253,21 @@ void stat(main_module & core, string brainmask, string removed, string truth, st
   int csf = 0;
 
   int wmgm = 0;
-  int wrongly_preserved = 0;       //wrongly preserved in 5 mm layer
-  int wrongly_preserved_top = 0;   //wrongly preserved in 5 mm layer and no deeper than 10 mm from mask bdr
-  int wrongly_preserved_all = 0;
-  int wrongly_removed = 0;
+  int wrongly_preserved = 0;       // in 5 mm layer
+  int wrongly_preserved_top = 0;   // in 5 mm layer and no deeper than 10 mm from mask border
+  int wrongly_preserved_all = 0;   // in all the non/brain volume avaliable
+  int wrongly_removed = 0;         // removed voxels inside truth
+  int wrongly_removed_before = 0;  // !!! values less than or equal to 0 within ground truth?
   int correctly_removed = 0;
   int wrongly_preserved_before = 0;
   int wrongly_preserved_before_top = 0;
   int wrongly_preserved_before_all = 0;
+
+  FILE * rep = fopen(res.c_str(), "a");
+  if(!rep){
+    printf("Unable to report statistics...bailing out.\n");
+    return;
+  };
 
   unsigned char * bits = new unsigned char[max];
 
@@ -260,36 +275,42 @@ void stat(main_module & core, string brainmask, string removed, string truth, st
   core.volume.find_surface();
   printf("REP: %s\n", brainmask.c_str());
   core.volume.loader.cur_plane = Loader::MASK_PLANE;
+
+  //load truth + 1 layer; including half-occupancy
+   core.volume.load((truth+"_").c_str());
+   for(int i = 0; i < max; i++)
+     if(MSK & core.volume.vol.mask[i]){
+      bits[i] |= TRL;
+   };
+
+
   //load truth and compute wm
   core.volume.load(truth.c_str());
   for(int i = 0; i < max; i++)
-    if(MSK & core.volume.vol.mask[i]){
+    if( core.volume.vol.mask[i] != 0){ //TODO
       bits[i] |= TR;
       wm += core.volume.vol.vol[i];
       wm_n++;
     };
-  wm /= wm_n; csf = (int)((float)wm * 0.4);
+  wm /= wm_n; csf = (int)((float)wm * 0.5);
   printf("REP: White matter intensity is %d, taking border %d\n", wm, csf);
   //load truth+
   core.volume.load(truthPlus.c_str());
   core.volume.find_surface();
   for(int i = 0; i < max; i++)
     if((MSK & core.volume.vol.mask[i]) && 
-       (!(bits[i] & TR))){
+       (!(bits[i] & TRL))){
       bits[i] |= TRP;
-      wrongly_preserved_before++;
       if( core.volume.vol.depth[i] < 10 ){
-	wrongly_preserved_before_top++;      
 	bits[i] |= TRPT;
       };
-   };
+    };
   //load all
   core.volume.load(all.c_str());
   for(int i = 0; i < max; i++)
-    if(MSK & core.volume.vol.mask[i]  && 
-       (!(bits[i] & TR))){
+    if((MSK & core.volume.vol.mask[i])  && 
+       (!(bits[i] & TRL))){
       bits[i] |= ALL;
-      wrongly_preserved_before_all++;
     };
 
   //load removed
@@ -299,21 +320,108 @@ void stat(main_module & core, string brainmask, string removed, string truth, st
 
   //counting itself
   for(int i = 0; i < max; i++){
-    if(core.volume.vol.vol[i] > csf){
+    core.volume.vol.mask[i]=0;
+    if(core.volume.vol.vol[i] > 40  /* csf */  ){ //
       if(bits[i] & TR)wmgm++;
+      if(bits[i] & TRPT)wrongly_preserved_before_top++;      
+      if(bits[i] & TRP)wrongly_preserved_before++;
+      if(bits[i] & ALL)wrongly_preserved_before_all++;
       if((bits[i] & (TR | RM)) == (TR | RM))wrongly_removed++;
-      if((bits[i] & (TRP | RM)) == TRP)wrongly_preserved++;
+      if((bits[i] & (TRP | RM)) == TRP){
+	wrongly_preserved++;
+	//	core.volume.vol.mask[i] |= MSK;
+      };
       if((bits[i] & (TRPT | RM)) == TRPT)wrongly_preserved_top++;
-      if((bits[i] & (ALL | RM)) == ALL)wrongly_preserved_all++;
-      if((bits[i] & (ALL | RM)) == (ALL | RM))correctly_removed++;
+      if((bits[i] & (ALL | RM)) == ALL){
+	wrongly_preserved_all++;      
+	core.volume.vol.mask[i] |= MSK;
+      };
+
+	if((bits[i] & (ALL | RM)) == (ALL | RM))correctly_removed++;
+    }else{ //it was edit out previously, and is a FN
+      if((core.volume.vol.vol[i] <= 0)&&(bits[i] & TR))wrongly_removed_before++;
     };
   };
 
+  // core.volume.loader.cur_plane = Loader::VOLUME_PLANE;
+  core.volume.save((removed+"_").c_str());
 
   //reporting:
-  printf("REP: %d, %d, %d, %d,  %d,  %d, %d, %d\n", wmgm, wrongly_removed, wrongly_preserved_before, wrongly_preserved_before_top, wrongly_preserved_before_all, wrongly_preserved, wrongly_preserved_top, wrongly_preserved_all);
+  fprintf(rep, "%s, %d, %d, %d, %d, %d,  %d,  %d, %d, %d\n", any_name.c_str(), \
+	  wmgm, wrongly_removed, wrongly_removed_before,\
+	  wrongly_preserved_before, wrongly_preserved_before_top, wrongly_preserved_before_all, \
+	  wrongly_preserved, wrongly_preserved_top, wrongly_preserved_all);
 
-  delete bits;
+  delete[] bits;
+  fclose(rep);
+};
+
+void diff(main_module & core, string a, string b)
+{
+  core.volume.load(a.c_str()); //load a
+  core.volume.loader.cur_plane = Loader::MASK_PLANE; //b goes into mask
+  core.volume.load(b.c_str());
+
+  int matches = 0;
+  int only_a = 0;
+  int only_b = 0;
+  for(int i = 0; i < 256*256*256; i++){
+    if((core.volume.vol.vol[i] > 0) && (core.volume.vol.mask[i] > 0))matches++;
+    if((core.volume.vol.vol[i] > 0) && !(core.volume.vol.mask[i] > 0))only_a++;
+    if(!(core.volume.vol.vol[i] > 0) && (core.volume.vol.mask[i] > 0))only_b++;
+  };
+
+  printf("RES: matches:%d, a:%d, b:%d\n", matches, only_a, only_b);
+};
+
+
+void join(main_module & core, string a, string b, string res)
+{
+  core.volume.load(a.c_str()); //load a
+  core.volume.loader.cur_plane = Loader::MASK_PLANE; //b goes into mask
+  core.volume.load(b.c_str());
+
+  int matches = 0;
+  int only_a = 0;
+  int only_b = 0;
+  for(int i = 0; i < 256*256*256; i++){
+    if(core.volume.vol.vol[i] > 0)core.volume.vol.mask[i] |= MSK;
+  };
+
+  core.volume.save(res.c_str());
+};
+
+bool exists(string filename){
+  FILE * ex = fopen(filename.c_str(), "r");
+  if(!ex) {
+    printf((string("") + "Unable to find " + filename + "\n").c_str());
+    return false;
+  };
+  fclose(ex);
+  return true;
+};
+
+void do_all(main_module & core, string id){
+  string subjects_dir;
+  char * e = getenv("SUBJECTS_DIR");
+  if(!e){
+    printf("Please set SUBJECTS_DIR\n");
+    return;
+  };
+
+  subjects_dir = string(e);
+
+  string file_mask = subjects_dir + "/" + id + "/mri/brainmask.auto.mgz";
+  string file_truth = subjects_dir + "/" + id + "/kdl/truth.mgz";
+  string file_plus5 = subjects_dir + "/" + id + "/kdl/plus5.mgz";
+  string file_all = subjects_dir + "/" + id + "/kdl/all.mgz";
+  string file_attempt = subjects_dir + "/" + id + "/kdl/attempt0.mgz";
+  string result = "res.txt";
+
+  if(!(exists(file_mask) && exists(file_truth) && exists(file_plus5) && exists(file_all) && exists(file_attempt)))return; //something is amiss.
+
+  create_volumes(core, file_mask, file_truth, file_plus5, file_all);
+  stat(core, file_mask, file_attempt, file_truth, file_plus5, file_all, id, result); 
 };
 
 int main(int argc, char ** argv) 
@@ -323,12 +431,22 @@ int main(int argc, char ** argv)
 
   //let's check what those aliens are up to:
   if(argc > 1){
+
+    if(strstr(argv[1], "help")){
+ 	printf(HELP_HELP);
+	return 1;
+    };
+
     if(strstr(argv[1], "raster")){
-      if(argc != 6){
+      if((argc != 6) && (argc != 7)){
 	printf(RASTER_HELP);
 	return 1;
       }else{
-	vitali(core, argv[2], argv[3], argv[4], argv[5]);
+	if(argc == 6){
+	  vitali(core, argv[2], argv[3], argv[4], argv[5], false);
+	}else{
+	  vitali(core, argv[2], argv[3], argv[4], argv[5], true);
+	};	  
 	return 0; //all done.
       };
     };
@@ -344,36 +462,74 @@ int main(int argc, char ** argv)
     };
 
     if(strstr(argv[1], "stat")){
-      if(argc != 7){
+      if(argc != 9){
 	printf(STAT_HELP);
 	return 1;
       }else{
-	stat(core, argv[2], argv[3], argv[4], argv[5], argv[6]);
+	stat(core, argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
 	return 0; //all done.
       };
     };
 
-    if(strstr(argv[1], "load")){
+
+    if(strstr(argv[1], "all")){
       if(argc != 3){
+	printf(ALL_HELP);
+	return 1;
+      }else{
+	do_all(core, argv[2]);
+	return 0; //all done.
+      };
+    };
+
+    if(strstr(argv[1], "diff")){
+      if(argc != 4){
+	printf(DIFF_HELP);
+	return 1;
+      }else{
+	diff(core, argv[2], argv[3]);
+	return 0; //all done.
+      };
+    };
+
+    if(strstr(argv[1], "join")){
+      if(argc != 5){
+	printf(JOIN_HELP);
+	return 1;
+      }else{
+	join(core, argv[2], argv[3], argv[4]);
+	return 0; //all done.
+      };
+    };
+
+
+    if(strstr(argv[1], "load")){
+      if(argc != 3 && argc != 4){
 	printf(LOAD_HELP);
 	return 1;
       }else{
 	core.volume.load(argv[2]); //just continue as normal
+	set_current_file(std::string(argv[2]));
+	if(argc == 4){
+	  core.volume.loader.cur_plane = Loader::MASK_PLANE; //b goes into mask
+	  core.volume.load(argv[3]); //load the second file as a mask
+	};
       };
     };
 
   }else{
     printf("No command given; trying to use default brainmask.mgz\n"); //else, just load default stuff
     if( ! core.volume.load(NULL) )return -1;
+    set_current_file("Default dummy.");
   };
 
   core.volume.find_surface();
 
   color_init();
-;
+  ;
   
-   gl_init(&core);
-   gui_start( &core.crossection, &core.volume);
+  gl_init(&core);
+  gui_start( &core.crossection, &core.volume);
 
 
   // Initialize time
@@ -393,14 +549,4 @@ int main(int argc, char ** argv)
   
   return 0;
 };
-
-
-
-
-
-
-
-
-
-
 

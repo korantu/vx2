@@ -44,11 +44,28 @@ class FastVolume {
   unsigned char * depth;
   //void add_point(V3f &in); use tool
   void propagate(int threshold, int amount, int depth, int times);
+  void propagate_spread(int threshold, int amount, int depth, int times);
+  void propagate_jump(int threshold, int amount, int depth, int times);
   void undo();   //remove the specified generation and its neighbouring seeds
   void downshift(int flags); //shift all values down;
   void use_tool(int where, int which, int size);
 
   int cur_gen;
+
+  /* similarity propagation parameters */
+  float half_band_size;
+  float band_center;
+  void set_band();
+
+  /* Scope of operations. */
+  bool use_scope;
+  int min_x;
+  int max_x;
+  int min_y;
+  int max_y;
+  int min_z;
+  int max_z;
+  bool in_scope(int offset);
 
   /* Cubic arrangement makes for efficient lookup */
   static const int dx = 0x01;
@@ -60,7 +77,8 @@ class FastVolume {
 
   static const int n_voxels = dim*dim*dim;
 
-  static const int neighbours[6];// = {dx, -dx, dy, -dy, dz, -dz};
+  //6 first are 6-connected.
+  static const int neighbours[26];// = {dx, -dx, dy, -dy, dz, -dz};
 
   /* Calculate offset from separate coords */
   static inline int getOffset(int x, int y, int z){
