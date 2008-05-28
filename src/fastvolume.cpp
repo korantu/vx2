@@ -514,7 +514,10 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       int x, y, z;
       getCoords(the_step.to, x, y, z);
       V3f cur(x,y,z);
+      //distance; [1-0], 1 - closest, 0 - furtherst
       float distance = smooth_bell((center-cur).length()/50);  
+      if(!use_scope)distance = 1.0;
+
 
       //magick formula from voxelbrain version 1.
       (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do_internals || (is_border(vol,dest))?1:0);
@@ -552,7 +555,10 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       int interesting = (go)?(i->to):(i->from);
       //now, use that interesting point and add it to be active,
       //if it is still not
-      if((!(mask[interesting] & BDR)) && in_scope(interesting)){
+
+      //in-scope means limit to a bounding box; so far no lexicon for bonuding
+      //avaliable as the nesessity is questionable.
+      if((!(mask[interesting] & BDR)) /* && in_scope(interesting) */){
 	mask[interesting] |= BDR;
 	res.push_back(interesting);
 	if(go)undo_buffer.push_back(interesting);

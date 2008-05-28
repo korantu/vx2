@@ -172,7 +172,7 @@ void GuiContainer::create(){
   TwAddVarRW(bar, "", TW_TYPE_INT32, &depth, " min=0 max=256 step=1 label='Depth' help='Go no deeper than this value. 0 means no limit' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &iterations, " min=1 max=400 step=10 label='Iterations.' help='Iterations per button press' ");
   TwAddVarRW(bar, "Prop. type", propagatorType, &propagator_type, "");
-  TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &(pnt->vol.use_scope), " label='Restrict to 2D' ");
+  TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &(pnt->vol.use_scope), " label='Prefer point of view' ");
   TwAddButton(bar, "", set_band, NULL, " label='Band' key='b' ");
   TwAddButton(bar, "", step, NULL, " label='Step' key='g' ");
   TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' ");
