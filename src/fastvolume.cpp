@@ -96,6 +96,47 @@ void FastVolume::reseed(){
   };
 };
 
+//flood-fill an AUX flag from the center
+//the points without such flag will recieve a mask
+
+void FastVolume::scan_for_disconnected_regions(){
+  //clean first
+  for(int i = 0; i < 256*256*256; i++){
+    mask[i]-=(AUX & mask[i]); //make sure it is not there.
+  };
+
+  std::vector<int> buf;
+  std::vector<int> buf_tmp;
+
+  buf.push_back(getOffset(127,127,127)); //pray it is inside.
+  mask[buf.back()] |= AUX;
+
+  //propagate using AUX mask from the center
+  while(buf.size() > 0){
+    // go over the buffer
+    for(std::vector<int>::iterator p = buf.begin(); p != buf.end(); p++){
+      int cur = *p;
+      //check the neighbours.
+      for(int j = 0; j < 6; j++){
+	int cur_nbr = cur+neighbours[j];
+	if(!(AUX & mask[cur_nbr]) && !((ZRO | MASK) & mask[cur_nbr]) && (vol[cur_nbr] > 0)){
+	  mask[cur_nbr] |= AUX;
+	  buf_tmp.push_back(cur_nbr);
+	};
+      };
+    };
+    buf = buf_tmp;
+    buf_tmp.clear();
+  };
+
+  //scan and mark all non-auxed staff
+  for(int i = 0; i < 256*256*256; i++){
+    if(!(AUX & mask[i]) && !(ZRO & mask[i]) &&(vol[i]>0))mask[i] |= MSK;
+    mask[i] -= (AUX & mask[i]);
+  };  
+
+};
+
 FastVolume::~FastVolume(){
   delete[] vol;
   delete[] mask;

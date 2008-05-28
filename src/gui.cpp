@@ -53,6 +53,7 @@ struct GuiContainer{
   static void TW_CALL switch_crossections( void * );
   static void TW_CALL set_band( void * );
   static void TW_CALL step( void * );
+  static void TW_CALL remove_hanging_pieces( void * );
   static void TW_CALL undo( void * );
   static void TW_CALL get_size(void * value, void * );
   static void TW_CALL set_size(const void * value, void * );
@@ -175,6 +176,7 @@ void GuiContainer::create(){
   TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &(pnt->vol.use_scope), " label='Prefer point of view' ");
   TwAddButton(bar, "", set_band, NULL, " label='Band' key='b' ");
   TwAddButton(bar, "", step, NULL, " label='Step' key='g' ");
+  TwAddButton(bar, "", remove_hanging_pieces, NULL, " label='Mark uncnctd.' ");
   TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' ");
   TwAddButton(bar, "", reseed, NULL, " label='Reseed' ");
   TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' ");
@@ -236,7 +238,7 @@ void TW_CALL GuiContainer::test_shape( void * UserData){
       for(int z = -60; z< 60; z++){
 	int dist = 60-sqrtf(x*x+y*y+z*z);
 	if(dist < 0 && dist >= -5)adj++; 
-	if(dist < 0)dist=0;
+	if(dist < 0 || !((x+50)%80))dist=0;
 	if(dist>0){
 	  //dist+=50;
 	  dist *= 5;
@@ -478,6 +480,12 @@ void TW_CALL GuiContainer::apply_mask( void * UserData){
 
 void TW_CALL GuiContainer::set_band( void * UserData){
   the_gui->pnt->vol.set_band();
+};
+
+void TW_CALL GuiContainer::remove_hanging_pieces( void * UserData){
+  the_gui->pnt->vol.scan_for_disconnected_regions();
+  the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....  
 };
 
 void TW_CALL GuiContainer::step( void * UserData){
