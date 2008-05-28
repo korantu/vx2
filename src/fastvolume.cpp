@@ -510,9 +510,14 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 	f_depth = 1.0;
       };                                              //depth too deep...
                                                       //it is meaningless.
-  
+
+      int x, y, z;
+      getCoords(the_step.to, x, y, z);
+      V3f cur(x,y,z);
+      float distance = smooth_bell((center-cur).length()/50);  
+
       //magick formula from voxelbrain version 1.
-      (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth;//*(do_internals || (is_border(vol,dest))?1:0);
+      (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do_internals || (is_border(vol,dest))?1:0);
 
 
       if(diff > max)max = diff;

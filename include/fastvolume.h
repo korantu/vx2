@@ -65,6 +65,7 @@ class FastVolume {
   int max_y;
   int min_z;
   int max_z;
+  V3f center;
   bool in_scope(int offset);
 
   /* Cubic arrangement makes for efficient lookup */

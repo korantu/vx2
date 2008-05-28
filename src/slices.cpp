@@ -204,7 +204,9 @@ void slices::update(FastVolume & in, V3f _center)//, V3f _dx, V3f _dy, V3f _dz){
   in.max_y = _center.y + 40;
   in.min_z = _center.z - 40;
   in.max_z = _center.z + 40;
-  
+  //and center
+  in.center = _center;
+
   //cool. whenther or not to use it is defined in
   //gui.cpp
 
@@ -225,7 +227,6 @@ center=_center;
       in.raster( c, dx, dy, tile_w, tile_h, tiles[xn*y+x]->data, m, zoom, show_mask);
     };
   update_needed = false;
-  show_mask = true; //show it next time
   
 };
 
