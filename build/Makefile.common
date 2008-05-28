@@ -25,17 +25,16 @@ VX2_SRC := ../../src/v3tools.cpp \
 deps: $(VX2_SRC)
 	$(CXX) $(CXXFLAGS) -M $(VX2_SRC) > deps.txt
 
-vx2: $(VX2)
+vx2: $(VX2) tags
 	$(CXX) $(VX2) $(LINKFLAGS) -o vx2
 
-
-.PHONY: clean 
+.PHONY: clean tags 
 clean:
 	rm *.o
 
 tags:
-	find ../.. -name *.h -or -name *.cpp -or -name *.c | xargs etags -e
-  
+	find ../.. -name *.h -or -name *.cpp -or -name *.c | xargs $(CTAGS) -e
+
 
 #objects
 %.o: ../../src/%.cpp
