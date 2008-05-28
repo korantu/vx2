@@ -257,10 +257,42 @@ void GlPoints::draw(V3f zaxis){
 
 };
 
+//storage
+
+struct backup_point{
+  int pos;
+  int value;
+  int mask;
+};
+
+std::vector<backup_point> backup;
+std::vector<int> old_mask;
+std::vector<int> old_values;
+
 void GlPoints::apply(){
-  for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++)
-    if(vol.mask[i])vol.vol[i]=0;
-  vol.reset();
+  
+  if(backup.size() == 0){
+    for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++){
+      if(vol.mask[i] & MASK){
+	backup_point pnt = {i, vol.vol[i], vol.mask[i]};
+	backup.push_back(pnt);
+	vol.vol[i] = 0;
+	vol.mask[i] |= ZRO; //it is a zero
+	vol.mask[i] -= (vol.mask[i] & MASK); //and not a mask.
+      };
+    };
+    printf("Saved %d points to be restored later...\n", backup.size());
+    vol.reset();
+  }else{ //got a backup to restore.
+    for(std::vector<backup_point>::iterator p = backup.begin(); p != backup.end(); p++){
+      backup_point pnt = *p;
+      vol.vol[pnt.pos] = pnt.value;
+      vol.mask[pnt.pos] = pnt.mask;
+      if(pnt.mask & BDR)vol.markers.push_back(pnt.pos);
+    };
+    printf("Allegedly restored %d points. \n", backup.size());
+    backup.clear(); //next time apply, not restore.
+  };
   //set_level(1);
   find_surface();
 };

@@ -53,6 +53,7 @@ public:
   };
 //_ * Private stuff:
 private:
+
   //volume operations
   int get(const FastVolume & in, int x, int y, int z); 
   void set(FastVolume & in, int x, int y, int z, int val);

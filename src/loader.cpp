@@ -30,7 +30,6 @@ void get_mgz_info(std::string name){
 
 int Loader::read(std::string name){ 
 
-
   gzFile fd; //file descriptor
 
   const int BUF_SIZE=16384;
@@ -41,8 +40,6 @@ int Loader::read(std::string name){
   fd = gzopen(name.c_str(),"ro");
   if(fd == NULL) throw Ex("Cannot open file"); //cannot read file.
   
-  //reading
-
   
   int cnt = 0;
 

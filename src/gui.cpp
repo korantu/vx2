@@ -178,7 +178,7 @@ void GuiContainer::create(){
   TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' ");
   TwAddButton(bar, "", reseed, NULL, " label='Reseed' ");
   TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' ");
-  TwAddButton(bar, "", apply_mask, NULL, " label='Apply mask' ");
+  TwAddButton(bar, "", apply_mask, NULL, " label='Toggle 3D Mask' ");
   TwAddButton(bar, "", load_file_truth, NULL, " label='Load truth' ");
 
   TwAddSeparator(bar, "File.", NULL);
@@ -188,7 +188,7 @@ void GuiContainer::create(){
 
   TwAddVarCB(bar, "", TW_TYPE_INT32, GuiContainer::set_size, GuiContainer::get_size, NULL, " min=20 max=300 step=5 label='Tile size' group='2D'");
   TwAddVarCB(bar, "", TW_TYPE_INT32, GuiContainer::set_zoom, GuiContainer::get_zoom, NULL, " min=1 max=5 step=1 label='Zoom' group='2D'");
-  TwAddVarCB(bar, "", TW_TYPE_BOOLCPP, GuiContainer::set_mask, GuiContainer::get_mask, NULL, " label='Mask' key='m' group='2D'");
+  TwAddVarCB(bar, "", TW_TYPE_BOOLCPP, GuiContainer::set_mask, GuiContainer::get_mask, NULL, " label='Toggle 2D Mask' key='m' group='2D'");
   TwAddVarCB(bar, "", TW_TYPE_FLOAT, GuiContainer::set_coverage, GuiContainer::get_coverage, NULL, " min=0.25 max=1.0 step=0.03 label='Coverage' group='2D'");
   TwAddVarCB(bar, "Color scheme", colorsType, GuiContainer::set_scheme, GuiContainer::get_scheme, NULL, " min=0 max=4 step=1 label='Color scheme' ");
   TwAddButton(bar, "", GuiContainer::switch_crossections, NULL, "label='Switch planes' key='c'");
@@ -238,7 +238,8 @@ void TW_CALL GuiContainer::test_shape( void * UserData){
 	if(dist < 0 && dist >= -5)adj++; 
 	if(dist < 0)dist=0;
 	if(dist>0){
-	  dist+=50;
+	  //dist+=50;
+	  dist *= 5;
 	  gmwm++;
 	};
 	int offset = the_gui->pnt->vol.getOffset(x+128,y+128, z+128);
