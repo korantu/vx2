@@ -45,7 +45,7 @@ NO_STDERR	= 2> /dev/null
 TARGET 	    = AntTweakBar
 
 # source files without extension:
-SRC_FILES	= TwColors.cpp TwFonts.cpp TwOpenGL.cpp TwBar.cpp TwMgr.cpp TwPrecomp.cpp LoadOGL.cpp TwEventGLFW.c #TwEventGLUT.c TwEventSDL.c
+SRC_FILES	= TwColors.cpp TwFonts.cpp TwOpenGL.cpp TwBar.cpp TwMgr.cpp LoadOGL.cpp TwEventGLFW.c #TwEventGLUT.c TwEventSDL.cc
 
 # build object list from source files
 OBJS_1 		= $(SRC_FILES:.c=.o)
@@ -88,13 +88,12 @@ clean:
 	
 ####### DEPENDENCIES
 
-TwColors.o:    TwPrecomp.h TwColors.h
-TwFonts.o:     TwPrecomp.h ../include/AntTweakBar.h TwFonts.h TwMgr.h TwColors.h TwGraph.h AntPerfTimer.h
-TwOpenGL.o:    TwPrecomp.h ../include/AntTweakBar.h TwOpenGL.h LoadOGL.h TwGraph.h TwColors.h TwFonts.h TwMgr.h AntPerfTimer.h
-TwBar.o:       TwPrecomp.h ../include/AntTweakBar.h TwBar.h TwMgr.h TwColors.h TwFonts.h TwGraph.h AntPerfTimer.h
-TwMgr.o:       TwPrecomp.h ../include/AntTweakBar.h TwMgr.h TwColors.h TwFonts.h TwGraph.h AntPerfTimer.h TwBar.h TwOpenGL.h res/TwXCursors.h
-TwPrecomp.o:   TwPrecomp.h
-LoadOGL.o:     TwPrecomp.h LoadOGL.h
+TwColors.o:    TwColors.h
+TwFonts.o:      ../include/AntTweakBar.h TwFonts.h TwMgr.h TwColors.h TwGraph.h AntPerfTimer.h
+TwOpenGL.o:     ../include/AntTweakBar.h TwOpenGL.h LoadOGL.h TwGraph.h TwColors.h TwFonts.h TwMgr.h AntPerfTimer.h
+TwBar.o:        ../include/AntTweakBar.h TwBar.h TwMgr.h TwColors.h TwFonts.h TwGraph.h AntPerfTimer.h
+TwMgr.o:        ../include/AntTweakBar.h TwMgr.h TwColors.h TwFonts.h TwGraph.h AntPerfTimer.h TwBar.h TwOpenGL.h res/TwXCursors.h
+LoadOGL.o:      LoadOGL.h
 TwEventGLFW.o: ../include/AntTweakBar.h 
 #TwEventGLUT.o: ../include/AntTweakBar.h
 #TwEventSDL.o:  ../include/AntTweakBar.h
