@@ -21,6 +21,7 @@ struct slices{
   V3f dx;
   V3f dy;
   V3f dz;
+  V3f display_center;
 
   bool pick(int x, int y, V3f & res);
   bool locate(V3f pos, int &x, int &y);

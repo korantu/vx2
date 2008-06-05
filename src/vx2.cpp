@@ -116,9 +116,12 @@ struct main_module : public gl_wrapper_reciever {
       //      crossection.update(volume.vol, volume.cursor, V3f(1,0,0), V3f(0,1,0), V3f(0,0,1)),
       bool picked = crossection.pick(st.x, st.y, res);
       if(picked){
+	crossection.display_center = res;
+	printf("Trying to set the window to %d %d %d !!!\n", volume.cursor.x, 
+	       volume.cursor.y, 
+	       volume.cursor.z);
 	volume.set_cursor(res);
 	printf("Picked...%f %f %f\n", res.x, res.y, res.z);
-	crossection.center = res;
 	crossection.update();
       }else{
 	float div = (st.width<st.height)?((float)st.width):((float)st.height);
@@ -137,6 +140,10 @@ struct main_module : public gl_wrapper_reciever {
 	if(volume.tool != 0)crossection.update();
       }else{
 	volume.pick(st.x, st.height-st.y);
+	crossection.display_center = volume.cursor;
+	printf("Trying to set the window to %d %d %d !!!\n", volume.cursor.x, 
+	       volume.cursor.y, 
+	       volume.cursor.z);
 	crossection.update(volume.vol, volume.cursor);
       };
       render_required = true;
@@ -185,7 +192,7 @@ struct main_module : public gl_wrapper_reciever {
       volume.draw(proj.z());
   
       if(crossection.update_needed)
-	crossection.update(volume.vol);
+	crossection.update(volume.vol, V3f(-1,-1,-1));
       crossection.draw();
 
       gui_draw();

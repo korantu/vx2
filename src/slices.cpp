@@ -45,7 +45,7 @@ bool slices::pick(int x, int _y, V3f & res){
   int idz = nnx+(xn_toshow*nny)-(total/2);
   int idx = (x - nnx*tile_w - x_orig) - tile_w/2;
   int idy = (y - nny*tile_h - y_orig) - tile_h/2;
-  res = center + (dz*idz)+(dy*(idy/zoom))+(dx*(idx/zoom));
+  res = display_center + (dz*idz)+(dy*(idy/zoom))+(dx*(idx/zoom));
   return true;
 };
 
@@ -90,7 +90,7 @@ void draw_edges(V3f o, V3f ex, V3f ey, V3f ez, int fl){
 };
 
 void slices::draw_box(){
-  V3f o(center);
+  V3f o(display_center);
   V3f ex = dx*tile_w/zoom;
   V3f ey = dy*tile_h/zoom;
   V3f ez = dz*xn_toshow*yn_toshow;
@@ -195,7 +195,7 @@ void slices::setup_projection(){
   glLoadIdentity();
 };
 
-void slices::update(FastVolume & in, V3f _center)//, V3f _dx, V3f _dy, V3f _dz){
+void slices::update(FastVolume & in, V3f _center = V3f(-1,-1,-1))//, V3f _dx, V3f _dy, V3f _dz){
 {
   //ok, setting minimum und maximum
   in.min_x = _center.x - 40;
@@ -205,7 +205,7 @@ void slices::update(FastVolume & in, V3f _center)//, V3f _dx, V3f _dy, V3f _dz){
   in.min_z = _center.z - 40;
   in.max_z = _center.z + 40;
   //and center
-  in.center = _center;
+  if(_center.x > 0)in.center = _center;
 
   //cool. whenther or not to use it is defined in
   //gui.cpp
@@ -218,9 +218,9 @@ void slices::update(FastVolume & in, V3f _center)//, V3f _dx, V3f _dy, V3f _dz){
   //we don not want to change orientation while updating; the parameters should just go
   // a second version of the slicer will fix it.
 //_dx = dx; _dy = dy; _dz=dz; 
-center=_center;
+  //center=_center;
   
-  V3f c(_center); c -= (dz*((xn_toshow*yn_toshow)/2+1));
+  V3f c(display_center); c -= (dz*((xn_toshow*yn_toshow)/2+1));
   for(int y = 0 ; y < yn_toshow; y++)
     for(int x = 0; x < xn_toshow; x++){
       c+=dz;
@@ -232,7 +232,7 @@ center=_center;
 
 void slices::update(FastVolume & in){
   /// if(the_volume)
-  update(in, center);//, dx, dy,dz);
+  update(in, display_center);//, dx, dy,dz);
 }
 
 void slices::switch_crossections(){
@@ -265,6 +265,7 @@ void slices::resize_all(int w, int h, int tw, int th){
 };
 
 slices::slices(GlPoints * _pnts, int _width, int _height, int _tile_w, int _tile_h){
+  display_center = V3f(128,28,128);
   pnts = _pnts;
   allocate_store(_width, _height, _tile_w, _tile_h);
   area_x = 1.0; area_y = 1.0;
@@ -276,6 +277,7 @@ slices::slices(GlPoints * _pnts, int _width, int _height, int _tile_w, int _tile
 
 //dummy screen; will be resized.
 slices::slices(GlPoints * _pnts){
+  display_center = V3f(128,28,128);
   pnts = _pnts;
   allocate_store(201, 201, 150, 150);
   area_x = 1.0; area_y = 1.0;

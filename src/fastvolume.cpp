@@ -506,6 +506,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       {
       cur = *i;
       //if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
+      if(mask[cur] & TRU)continue;
       mask[cur] -= MASK & mask[cur];
       mask[cur] |= MSK;
       //every neighbour
@@ -639,6 +640,9 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
     for(std::vector<int>::iterator i = markers.begin(); i != markers.end(); i++){
       cur = *i;
       //if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
+
+      if(mask[cur] & TRU)continue;
+
       mask[cur] -= MASK & mask[cur];
       mask[cur] |= MSK;
 
