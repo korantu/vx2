@@ -34,7 +34,7 @@ FastVolume::FastVolume()
 
 //check if the current offset is inside the scope
 bool FastVolume::in_scope(int off){
-   if(!use_scope)return true;
+  if(!use_scope)return true;
   int x, y, z;
   getCoords(off, x, y, z);
   printf("%d:%d:%d\n", x, y, z);
@@ -84,9 +84,10 @@ void FastVolume::reseed(){
       mask[i] -= BDR; mask[i] |= MSK; //just make sure we seed what we seed
     };
     if((mask[i] & MASK) && !(mask[i] & (ZRO|TRU))){ 
+      //iterate neighbours
       for(j = 0; j < 6; j++){
 	cur =  i+neighbours[j];
-	if(!(mask[cur]&MASK) && in_scope(cur)){ //if any pixel around is not mask, then...
+	if(!(mask[cur]&(MASK | ZRO | TRU))  && in_scope(cur)){ //if any pixel around is not mask, then...
 	  mask[i] |= BDR; //we don't care if it is also a mask 
 	  markers.push_back(i);
 	  break; //next point, please
@@ -391,7 +392,7 @@ void jumping_stepper::make_step(const std::vector<int> & in, std::vector<int> & 
       };
     };  
 };
-
+/*
 void FastVolume::propagate_jump(int threshold, int dist, int max_depth, int times){
   // cur_gen++;
   int cur, cur_val, cursor_idx;
@@ -409,24 +410,29 @@ void FastVolume::propagate_jump(int threshold, int dist, int max_depth, int time
       mask[cur] -= MASK & mask[cur];
       mask[cur] |= MSK;
       //every neighbour
-      for(int j = 0; j < 6; j++){
-	cur_idx = cur + neighbours[j];
-	cur_val = vol[cur_idx];
-	if(MASK & mask[cur_idx]){
-	  continue;
-	  //mask[cur_idx] -= (BDR & (mask[cur_idx]);
-	};
-	//try lookahead first; proceed as normal if unsuccessful;
-	if(!lookahead(this, res, cur, neighbours[j], dist, cur_gen)){
-	  if((!((ZRO | TRU | MASK) & mask[cur_idx])) && (cur_val < threshold) && ((depth[cur_idx] < max_depth) || depth == 0)){
-	    if(!(BDR & mask[cur_idx])){
-	      mask[cur_idx] |= BDR;
-	      res.push_back(cur_idx);
-	      undo_buffer.push_back(cur_idx);
+      if(!in_scope(cur)){ //wait a bit
+	mask[cur] |= BDR;
+	res.push_back(cur);
+      }else{
+	For(int j = 0; j < 6; j++){
+	  cur_idx = cur + neighbours[j];
+	  cur_val = vol[cur_idx];
+	  if(MASK & mask[cur_idx]){
+	    continue;
+	    //mask[cur_idx] -= (BDR & (mask[cur_idx]);
+	  };
+	  //try lookahead first; proceed as normal if unsuccessful;
+	  if(!lookahead(this, res, cur, neighbours[j], dist, cur_gen)){
+	    if((!((ZRO | TRU | MASK) & mask[cur_idx])) && (cur_val < threshold) && ((depth[cur_idx] < max_depth) || depth == 0)){
+	      if(!(BDR & mask[cur_idx])){
+		mask[cur_idx] |= BDR;
+		res.push_back(cur_idx);
+		undo_buffer.push_back(cur_idx);
+	      };
 	    };
 	  };
 	};
-      };
+      }; //in scope
     };
     markers = res;
     printf("Markers %d\n", markers.size());
@@ -438,6 +444,7 @@ void FastVolume::propagate_jump(int threshold, int dist, int max_depth, int time
   //reseed();
 
 };
+*/
 
 struct step{
   int from;
@@ -541,7 +548,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 	if(mask[the_step.to+neighbours[k]] & MASK)friends+=1;
       };
       
-      friends=friends/27.0;//smooth_bell(friends-9.0/30)*smooth_bell((friends-9.0)/30);
+      friends=friends/27.0; //smooth_bell(friends-9.0/30)*smooth_bell((friends-9.0)/30);
 
       //depth factor
       float f_depth = 0.1;
@@ -634,6 +641,12 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
       //if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
       mask[cur] -= MASK & mask[cur];
       mask[cur] |= MSK;
+
+     if(!in_scope(cur)){ //wait a bit
+	mask[cur] |= BDR;
+	res.push_back(cur);
+     }else{ //in scope, can go
+
       //every neighbour
       for(int j = 0; j < 6; j++){
 	cur_idx = cur + neighbours[j];
@@ -653,6 +666,7 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
 	  };
 	};
       };
+     }; //in scope
     };
     markers = res;
     printf("Markers %d\n", markers.size());

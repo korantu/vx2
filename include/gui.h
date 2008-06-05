@@ -11,7 +11,7 @@ void gui_stop();
 
 void set_current_file(std::string in);
 
-void read_voxels(std::string in, GlPoints * pnt, bool _half);
+void read_voxels(std::string in, GlPoints * pnt, bool _half, bool _tru, bool _fill);
 
 
 #endif // __GUI_H__

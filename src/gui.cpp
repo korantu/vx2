@@ -166,7 +166,7 @@ void GuiContainer::create(){
   TwAddVarRO(bar, "", TW_TYPE_FLOAT, &pnt->tw_mri_value, " label='ValueAtCursor' help='MRI data value at the calcualtor.' ");
   TwAddSeparator(bar, "Editing.", NULL);
   //TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
-  TwAddVarRW(bar, "Editing tool", modesType, &pnt->tool, "keyIncr=T keyDecr=t");
+  TwAddVarRW(bar, "Editing tool", modesType, &pnt->tool, "keyIncr=r keyDecr=t");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=6 step=1 label='Tool size' help='Point size' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=1000 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead.' help='Skip this many voxels in search for suitable areas.' ");
@@ -258,6 +258,8 @@ void TW_CALL GuiContainer::test_shape( void * UserData){
 
 int dead = 0;
 bool half = false; //incude > 50% voxels
+bool inside = true;
+bool tru = false;
 
 bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
   V3f v[3] = {v0, v1, v2};
@@ -278,7 +280,7 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
       int cur = pnt->vol.getOffset(floor(v[i].x), floor(v[i].y), floor(v[i].z));
       if(!(pnt->vol.mask[cur] & TRU)){
 	pnt->vol.mask[cur] |= TRU;
-	if(good)pnt->vol.mask[cur] |= MSK;
+	if(good)pnt->vol.mask[cur] |= (tru?TRU:MSK);
 	if((pnt->vol.mask[cur] & MASK) 
 	   && (pnt->vol.vol[cur] > 35))dead++; //count intersecting pixels
       };
@@ -302,12 +304,14 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
   
 };
 
-void read_voxels(std::string in, GlPoints * pnt, bool _half = false){
+void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru = false, bool _fill = true){
   V3f center(0,0,0);
   int N = 0;
 
   half = _half;
   printf("Including %s voxles\n", half?">50% occupancy":"all");
+
+  tru = _tru; //using true voxels.
 
   dead = 0;
   FILE * f = fopen(in.c_str(), "ro");
@@ -338,7 +342,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false){
     //  in+=V3f(128.0+tr.c_r, 128.0+tr.c_s, 128.0-tr.c_a);
     //  in+=V3f(-tr.c_r, -tr.c_s, tr.c_a);
 
-    in+=V3f(128, 128.9, 128);
+    in+=V3f(128, 128, 128);
 
 
     stor.push_back(in);
@@ -366,6 +370,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false){
   printf("stor size is:%d\n", stor.size());
   printf("%d pixels false positive.\n", dead);
 
+  if(_fill){
   printf("Trying to fill it\n");
    center /= N; //this is the average;
    printf("The seed is %f %f %f; %d in total;  so what? \n", center.x, center.y, center.z, N);
@@ -379,7 +384,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false){
   for(int i = 0; i < 256*256*256; i++){
     pnt->vol.mask[i] -= (pnt->vol.mask[i] & TRU);
   };
-
+  };
   pnt->vol.updated = true;
   pnt->update(); //and make sure all is shown up.....
 
@@ -393,7 +398,7 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData){
   std::string in = getFile();
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
-    read_voxels(in, the_gui->pnt);
+    read_voxels(in, the_gui->pnt, false, true, false);
   };
 };
 

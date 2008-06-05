@@ -216,8 +216,8 @@ using namespace std;
 //loading right hemisphere + left hemisphere and propagating around it
 void vitali(main_module & core, string left, string right, string sample, string result, bool _half = false){
   core.volume.load(sample.c_str());
-  read_voxels(left, & core.volume, _half);
-  read_voxels(right, & core.volume, _half);
+  read_voxels(left, & core.volume, _half, false /*use border*/, true /*yes, fill please*/);
+  read_voxels(right, & core.volume, _half, false, true);
   core.volume.loader.cur_plane = Loader::MASK_PLANE;
   core.volume.save(result.c_str());
 };

@@ -3,7 +3,8 @@ CTAGS := /Users/desi/kdl/ctags-5.7/ctags
 -include ../Makefile.common
 -include deps.txt
 
-
+app: vx2
+	cp ./vx2 VX2.app/Contents/MacOS
 
 
 
