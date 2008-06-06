@@ -43,8 +43,12 @@ void GlPoints::set_level(float l){
 };
 
 std::string default_name("brainmask.mgz");
+void reset_3d_mask();
 
 bool GlPoints::load(const char * in){
+
+  reset_3d_mask();
+
   if(in)default_name = std::string(in);
   try{
     int cnt = loader.read(default_name);
@@ -59,6 +63,8 @@ bool GlPoints::load(const char * in){
     return false;
   };
   return true;
+
+  
 };
 
 void GlPoints::find_surface(){
@@ -269,11 +275,23 @@ std::vector<backup_point> backup;
 std::vector<int> old_mask;
 std::vector<int> old_values;
 
+void reset_3d_mask(){
+  backup.clear();
+  old_mask.clear();
+  old_values.clear();
+};
+
 void GlPoints::apply(){
+
+  //we don't care if the allocation fails; just dont' use it if it is null
   
   if(backup.size() == 0){
+    char * truth_backup;
+    truth_backup  = new char[256*256*256];
     for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++){
-      if(vol.mask[i] & MASK){
+      //saving truth
+      if(truth_backup)truth_backup[i] = (vol.mask[i] & TRU)?1:0;
+      if(vol.mask[i] & (MASK | TRU)){
 	backup_point pnt = {i, vol.vol[i], vol.mask[i]};
 	backup.push_back(pnt);
 	vol.vol[i] = 0;
@@ -283,6 +301,13 @@ void GlPoints::apply(){
     };
     printf("Saved %d points to be restored later...\n", backup.size());
     vol.reset();
+    //reverting truth if possible;
+    if(truth_backup){
+      for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++){
+	vol.mask[i] |= truth_backup[i]?TRU:0;
+      };
+      delete[] truth_backup; //no need already;
+    };
   }else{ //got a backup to restore.
     for(std::vector<backup_point>::iterator p = backup.begin(); p != backup.end(); p++){
       backup_point pnt = *p;
