@@ -120,6 +120,7 @@ ColorEntry::ColorEntry(const char * _name, const ColorMapper & _map){
 ColorEntry & ColorEntry::operator=(const ColorEntry & in){
   name = in.name;
   map = in.map;
+  return * this;
 };
 
 ColorEntry::ColorEntry(const ColorEntry & in){
@@ -135,7 +136,7 @@ vector<ColorEntry> entries;
 
 void scheme_fill(ColorMapper & in, int scheme){
   if(!color_inited)return;
-  if(scheme < 0 || scheme >= entries.size())return;
+  if(scheme < 0 || (unsigned int)scheme >= entries.size())return;
   in = entries[scheme].map;
 };
 
@@ -186,7 +187,7 @@ void color_init(){
 
 vector<string> color_type(){
   vector<string> out;
-  for(int i = 0; i < entries.size(); i++)
+  for(unsigned int i = 0; i < entries.size(); i++)
     out.push_back(entries[i].name);
   return out;
 };

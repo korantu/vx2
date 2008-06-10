@@ -110,17 +110,17 @@ class FastVolume {
    Bad approach as there are different methods to look for surface. */
   void findSurface(std::vector<int> &, int space);
 
-  /* Derive this class for different purposes; and use different iterator methods*/
-  class Iterator {
+  /* Derive this class for different purposes; and use different iterator methods
+    class Iterator {
 
   public:
-    /* Iterate a line; calling for every point is too expensive */
+      // Iterate a line; calling for every point is too expensive 
     virtual void line(int start, int finish) = 0;
 
   };
-
+  */
   //center, dx, dy, pixel/width/height, buffer, zoom (default = 1) 
-  static inline void iterate(Iterator &);
+  // static inline void iterate(Iterator &);
   void raster( V3f o, V3f dx, V3f dy, int w, int h, unsigned char * buf, ColorMapper & mapper, int zoom = 1, bool show_mask = true);
 
 };

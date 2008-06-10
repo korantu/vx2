@@ -20,6 +20,10 @@ gl_wrapper_reciever::gl_wrapper_reciever(){
   st.interface_updated = false;
 };
 
+//virtual destructor to keep the compiler happy.
+gl_wrapper_reciever::~gl_wrapper_reciever(){
+};
+
 ///universal callbacks definitions:
 void resize_callback( int x, int y){
   rcv->st.width = x;

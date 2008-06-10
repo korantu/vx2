@@ -12,7 +12,7 @@ std::string GetOpenFileFromUser(dialog_type d_type)
   NavDialogCreationOptions dialogOptions;
   NavDialogRef dialog;
   NavReplyRecord replyRecord;
-  CFURLRef fileAsCFURLRef = NULL;
+  //CFURLRef fileAsCFURLRef = NULL;
   FSRef fileAsFSRef;
   OSStatus status;
     CFIndex sz;

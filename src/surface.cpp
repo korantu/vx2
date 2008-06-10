@@ -49,7 +49,7 @@ bool read_surface(Surface & surf, std::string name){
 
   for(int i = 0; i < tris; i++){
     int a, b, c, zero; 
-    int m[3];
+    //int m[3];
     fscanf(f, "%d %d %d %d\n", &a, &b, &c, &zero);
     //Life sucks...and the answer is in fact 43.
     surf.idx.push_back(a);
@@ -67,14 +67,15 @@ bool read_surface(Surface & surf, std::string name){
  
   fclose(f);
 
-  for(int i = 0; i < surf.n.size(); i++){
+  for(unsigned int i = 0; i < surf.n.size(); i++){
     V3f n = surf.n[i];
     n /= n.length();
     surf.n[i] = n;
   };
 
-  printf("stor size is:%d\n", surf.v.size());
+  printf("stor size is:%d\n", (int)surf.v.size());
   
+  return true;
 };
 
 
@@ -83,7 +84,11 @@ V3f find_center_point(const Surface & surf)
   V3f res(0,0,0);
   for(vector<V3f>::const_iterator i = surf.v.begin(); i != surf.v.end(); i++)
     res += (*i);
+  printf("total.result: %f,%f,%f\n", res.x, res.y, res.z);
+
   res /= surf.v.size();
+
+  return res;
 };
 
 
@@ -110,7 +115,7 @@ void refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n, const 
       if(!t.half)good = true;
 
       int cur = pnt.vol.getOffset(floor(v[i].x), floor(v[i].y), floor(v[i].z));
-     
+           
       if(cur < 0 || cur > 255*255*255)return;
       if(!(pnt.vol.mask[cur] & TRU)){
 	pnt.vol.mask[cur] |= TRU;
@@ -153,8 +158,7 @@ void rasterize_surface(Surface & surf,
   //  std::vector<int> tristor; //triangle storage
 
   //loop trough every triangle and refine it.
-  for(int i = 0; i < surf.v.size(); i+=3){
-    // printf("having sex with point %d\n", i);
+  for(unsigned int i = 0; i < surf.v.size(); i+=3){
 
     m[0]=surf.v[i];
     m[1]=surf.v[i+1];
@@ -166,7 +170,7 @@ void rasterize_surface(Surface & surf,
   if(t.inside){
   printf("Trying to fill it\n");
   center = find_center_point(surf); //this is the average;
-   printf("The seed is %f %f %f; %d in total;  so what? \n", center.x, center.y, center.z);
+  printf("The seed is %f %f %f; %d in total;  so what? \n", center.x, center.y, center.z, (int)surf.v.size());
    int cur = pnt.vol.getOffset(center.x, center.y, center.z);
    pnt.vol.mask[cur] |= BDR;
    pnt.vol.markers.push_back(cur);

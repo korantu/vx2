@@ -1,15 +1,15 @@
-CXXFLAGS := -DUSE_TW -g -O3 -I../../include -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL 
+CXXFLAGS := -DUSE_TW -g -O3 -Wall -I../../include -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL 
 VX2 := navigator.o \
 	v3tools.o \
 	fastvolume.o \
 	loader.o \
 	gl_points.o \
 	gl_wrapper.o \
+	surface.o \
 	slices.o \
 	color.o \
 	gui.o \
-	macosx.o \
-	vx2.o 
+	macosx.o 
 
 VX2_SRC := ../../src/v3tools.cpp \
 	../../src/fastvolume.cpp \
@@ -19,14 +19,18 @@ VX2_SRC := ../../src/v3tools.cpp \
 	../../src/slices.cpp \
 	../../src/color.cpp \
 	../../src/gui.cpp \
+	../../src/surface.cpp \
 	../../src/macosx.cpp \
-	../../src/vx2.cpp 
+	../../src/vx2.cpp
 
-deps: $(VX2_SRC)
+deps: $(VX2_SRC) 
 	$(CXX) $(CXXFLAGS) -M $(VX2_SRC) > deps.txt
 
 vx2: $(VX2) tags
-	$(CXX) $(VX2) $(LINKFLAGS) -o vx2
+	$(CXX) $(CXXFLAGS) ../../src/vx2.cpp $(VX2) $(LINKFLAGS) -o vx2
+
+t: $(VX2) tags
+	$(CXX) $(CXXFLAGS) ../../src/t.cpp $(VX2) $(LINKFLAGS) -o t
 
 .PHONY: clean tags 
 clean:

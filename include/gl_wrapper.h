@@ -33,7 +33,7 @@ struct gl_wrapper_reciever{
 
 
   gl_wrapper_reciever(); ///`initialize the whole structure.
-
+  virtual ~gl_wrapper_reciever();
 };
 
 void gl_init(gl_wrapper_reciever *);

@@ -70,7 +70,7 @@ bool GlPoints::load(const char * in){
 void GlPoints::find_surface(){
   set_level(1);
   for(int ll = 1; ll < 10; ll++)
-    printf("found %d points at level %d.\n", list[ll].size(), ll);
+    printf("found %d points at level %d.\n", (int)list[ll].size(), ll);
 };
 
 bool GlPoints::save(const char * out){
@@ -160,8 +160,8 @@ void GlPoints::update(){
 
   };
   printf("seeds: %d, passive border: %d\n", 
-	 the_markers.size(), 
-	 the_marked.size());
+	 (int)the_markers.size(), 
+	 (int)the_marked.size());
 
 };
 
@@ -299,7 +299,7 @@ void GlPoints::apply(){
 	vol.mask[i] -= (vol.mask[i] & MASK); //and not a mask.
       };
     };
-    printf("Saved %d points to be restored later...\n", backup.size());
+    printf("Saved %d points to be restored later...\n", (int)backup.size());
     vol.reset();
     //reverting truth if possible;
     if(truth_backup){
@@ -315,7 +315,7 @@ void GlPoints::apply(){
       vol.mask[pnt.pos] = pnt.mask;
       if(pnt.mask & BDR)vol.markers.push_back(pnt.pos);
     };
-    printf("Allegedly restored %d points. \n", backup.size());
+    printf("Allegedly restored %d points. \n", (int)backup.size());
     backup.clear(); //next time apply, not restore.
   };
   //set_level(1);

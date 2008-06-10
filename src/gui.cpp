@@ -1,6 +1,8 @@
 
 #include "gui.h"
 #include "native.h"
+#include "surface.h"
+
 #include <vector>
 #include <string>
 #include <AntTweakBar.h>
@@ -23,15 +25,15 @@ struct GuiContainer{
   int threshold;
   int generation;
   int amount;
-  int depth;
   int iterations;
-  int propagator_type; //what kind of propagation do we want
-
-  //2d options
   int size;
   int scheme;
   int zoom;
   float coverage;
+  int depth;
+  int propagator_type; //what kind of propagation do we want
+
+  //2d options
 
   
 
@@ -42,6 +44,7 @@ struct GuiContainer{
   static void TW_CALL set_level(const void * value, void * );
   static void TW_CALL load_file( void * );
   static void TW_CALL test_shape( void * );
+  static void TW_CALL test_button( void * );
   static void TW_CALL save_file( void * );
   static void TW_CALL save_file_as( void * );
   static void TW_CALL load_mask( void * );
@@ -124,7 +127,7 @@ void GuiContainer::create(){
   ///create type for colors... well; damnit? stupid.        
   std::vector<std::string> col = color_type();
   TwEnumVal colorsEV[col.size()];
-  for(int i = 0 ; i < col.size(); i++){
+  for(unsigned int i = 0 ; i < col.size(); i++){
     const char * ss = col[i].c_str();
     TwEnumVal a = {i, ss};
     //  a.Label[0]=col[i].c_str()[0];
@@ -141,6 +144,7 @@ void GuiContainer::create(){
   TwAddButton(bar, "", save_file, NULL, "label='Save'");
   TwAddButton(bar, "", save_file_as, NULL, "label='Save As'");
   TwAddButton(bar, "", test_shape, NULL, "label='Test Shape'");
+  TwAddButton(bar, "", test_button, NULL, "label='Test Button'");
   TwAddVarRW(bar, "IO Type", ioType, &pnt->loader.cur_plane, "");
   TwAddSeparator(bar, "Operation.", NULL);
   TwAddVarRW(bar, "", TW_TYPE_DOUBLE, &pnt->tw_pnt, " label='Point size' min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
@@ -210,7 +214,7 @@ void TW_CALL GuiContainer::get_level(void * value, void * UserData){
 };
 void TW_CALL GuiContainer::set_level(const void * value, void * UserData){
   the_gui->level = *((float *)value);
-  printf("setting level %f\n", the_gui->level);
+  printf("setting level %f\n", (double)the_gui->level);
   the_gui->pnt->set_level((float)the_gui->level);
 };
 
@@ -252,119 +256,21 @@ void TW_CALL GuiContainer::test_shape( void * UserData){
 };
 
 
-#include "v3.h"
-#include "stdio.h"
+//remove half the brain
+int cutted = 10;
 
-//**//
-
-//reading a surface from a file
-
-using namespace std;
-
-//data structures
-struct Surface{
-  vector<V3f> n;
-  vector<V3f> v;
-
-  vector<int> idx; //3 per triangle
-
-  int n_tris;
-  
-};
-
-
-
-struct RenderingTraits{
-  int dead;
-  bool half;
-  bool inside;
-  bool tru;
-  RenderingTraits();
-};
-
-RenderingTraits::RenderingTraits():dead(0),
-				   half(false), 
-				   inside(true), 
-				   tru(false)
-{
-  //nothing here
-};
-
-//interface
-bool read_surface(Surface & surf, std::string name);
-void render_surface(const Surface & surf, 
-		    GlPoints & pnt,         //the point set to render 
-		    const RenderingTraits &); //how to render
-V3f find_center_point(const Surface & surf);
-
-///recursive refining function
-V3f refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n){
-};
-
-//implementation
-
-bool read_surface(Surface & surf, std::string name){
-  int points;     //for the number of points
-  int tris;       //for the number of triangles
-  char buf[1000]; //for filename
-
-  FILE * f = fopen(name.c_str(), "ro");
-  if(f == NULL){
-    printf("Cannot open surface file;\n");
-    return false;
+void TW_CALL GuiContainer::test_button( void * UserData){
+  printf("Coming up with a surface.\n");
+  int adj = 0;
+  int gmwm = 0;
+  //the_gui->pnt->vol.reset();
+  for(int i = 0; i < 255*255*cutted; i++){
+    the_gui->pnt->vol.vol[i] = 0;
   };
-
-  fgets( buf, 1000, f); //first line, don't care
-  fscanf(f, "%d %d\n", &points, &tris);
-  printf("Sanity checking\n");
-  if(points < 0 || tris < 0)return false;
-  //640k should be enough for everyone.
-  if(points > 1000000 || tris > 1000000) return false; 
-
-  //reading points and pushing normals
-  for(int i = 0; i < points; i++){
-    V3f in;
-    int dummy;
-    fscanf(f, "%f  %f  %f  %d\n", &in.x, &in.y, &in.z, &dummy);
-    in = V3f(-in.x, -in.z, +in.y);
-    in+=V3f(128, 128, 128);
-    surf.v.push_back(in);
-    surf.n.push_back(V3f(0,0,0));
-  };
-
-  for(int i = 0; i < tris; i++){
-    int a, b, c, zero; 
-    int m[3];
-    fscanf(f, "%d %d %d %d\n", &m[0], &m[1], &m[2], &zero);
-    for(int i = 0; i < 3; i++)surf.idx.push_back(m[i]);
-  
-    V3f n; n.cross(surf.v[m[1]]-surf.v[m[0]], surf.v[m[2]]-surf.v[m[0]]);
-    n /= -n.length(); //normal - outside
-
-    for(int i = 0; i< 3; i++)surf.n[m[i]] = surf.n[m[i]] + n; 
-  };
- 
-  fclose(f);
-
-  for(int i = 0; i < surf.n.size(); i++){
-    V3f n = surf.n[i];
-    n /= n.length();
-    surf.n[i] = n;
-  };
-
-  printf("stor size is:%d\n", surf.v.size());
-  
+  the_gui->pnt->find_surface();
+  printf("gmwm: %d, adj: %d\n", gmwm, adj);
+  cutted+=3;
 };
-
-
-V3f find_center_point(const Surface & surf){
-  V3f res(0,0,0);
-  for(vector<V3f>::const_iterator i = surf.v.begin(); i != surf.v.end(); i++)
-    res += (*i);
-  res /= surf.v.size();
-};
-
-//**//
 
 #include "v3.h"
 #include "stdio.h"
@@ -413,8 +319,7 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
     refine( o1, v2, o2, pnt, n);
     refine( o0, o1, o2, pnt, n);
   }; 
-
-  
+  return true;
 };
 
 void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru = false, bool _fill = true){
@@ -462,6 +367,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
     center+=in;
     N++;
   };
+
   //ok, now all the correct points in tri.
   //read tris now
   V3f m[3];
@@ -480,7 +386,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
   };
  
   fclose(f);
-  printf("stor size is:%d\n", stor.size());
+  printf("stor size is:%d\n", (int)stor.size());
   printf("%d pixels false positive.\n", dead);
 
   if(_fill){
@@ -511,8 +417,24 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData){
   std::string in = getFile();
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
-    read_voxels(in, the_gui->pnt, false, true, false);
+    //    read_voxels(in, the_gui->pnt, false, true, false);
+    //   read_voxels(in, the_gui->pnt, false, true, true);
+
   };
+
+  ///now, try the surface
+  Surface it;
+  
+  read_surface(it, in);
+
+  printf("Obtained %d vertices, and %d triangles, thanks for asking.\n",
+	 (int)it.n.size(), (int)(it.idx.size() / 3));
+
+  //RenderingTraits t = {0, false, false, true};
+
+  //rasterize_surface(it, *the_gui->pnt, t);
+
+  
 };
 
 void TW_CALL GuiContainer::switch_crossections( void * UserData){
