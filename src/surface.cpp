@@ -16,6 +16,13 @@ A file for manipulation with surfaces;
 };
 */
 
+vector<Surface> __surfaces;
+
+//accessor. making sure the actual storage is only defined once.
+vector<Surface> * get_active_surfaces(){
+  return & __surfaces;
+};
+
 bool read_surface(Surface & surf, std::string name){
   int points;     //for the number of points
   int tris;       //for the number of triangles
@@ -127,10 +134,10 @@ void refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n, const 
   
   //check if the refinement is needed, i.e. tris are too big ( > 0.5 voxels )
   
-  #define FUCK_OFF true
-  if(FUCK_OFF && ((v0-v1).length2() > 1 ||
-     (v1-v2).length2() > 1 ||
-		  (v2-v0).length2() > 1)){
+
+  if(((v0-v1).length2() > 0.2 ||
+      (v1-v2).length2() > 0.2 ||
+      (v2-v0).length2() > 0.2)){
     V3f o0 = (v0+v1)/2;
     V3f o1 = (v1+v2)/2;
     V3f o2 = (v2+v0)/2;
@@ -154,19 +161,23 @@ void rasterize_surface(Surface & surf,
   //ok, now all the correct points in tri.
   //read tris now
   V3f center;
-  V3f m[3];
+  //V3f m[3];
   //  std::vector<int> tristor; //triangle storage
 
   //loop trough every triangle and refine it.
-  for(unsigned int i = 0; i < surf.v.size(); i+=3){
+  for(unsigned int i = 0; i < surf.idx.size()-3; i+=3){
 
-    m[0]=surf.v[i];
-    m[1]=surf.v[i+1];
-    m[2]=surf.v[i+2];
-
-    refine_triangle(m[0], m[1], m[2], pnt,  surf.n[i], t); 
+    V3f a(surf.v[surf.idx[i]]);
+    V3f b(surf.v[surf.idx[i+1]]);
+    V3f c(surf.v[surf.idx[i+2]]);
+    /*
+    printf("Rendering...\n");
+    for(int h = 0; h < 3; h++)
+      printf("a:%f, b:%f, c:%f\n", m[h].x, m[h].y, m[h].z);
+    */
+    refine_triangle(a, b, c, pnt,  surf.n[surf.idx[i]], t); 
   };
- 
+  
   if(t.inside){
   printf("Trying to fill it\n");
   center = find_center_point(surf); //this is the average;
@@ -187,9 +198,8 @@ void rasterize_surface(Surface & surf,
     if(pnt.vol.mask[i] & MASK)pnt.vol.mask[i] |= TRU;    
   };
 };
+  
 };
 //**//
-
-
 
 

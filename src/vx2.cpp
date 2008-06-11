@@ -105,6 +105,10 @@ struct main_module : public gl_wrapper_reciever {
     
   };
   void do_key(){
+    if(st.k >= 49 && st.k <= 54){
+      printf("Trying to do a key... %d", st.k);
+      volume.tool = (st.k - 49);
+    };
   };
 
   void do_mouse(){

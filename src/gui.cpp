@@ -50,6 +50,7 @@ struct GuiContainer{
   static void TW_CALL load_mask( void * );
   static void TW_CALL save_mask( void * );
   static void TW_CALL load_file_truth( void * );
+  static void TW_CALL apply_truth( void * ); //remove voxels around ground truth
   static void TW_CALL apply_mask( void * );
   static void TW_CALL reseed( void * );
   static void TW_CALL kill_seeds( void * );
@@ -186,6 +187,7 @@ void GuiContainer::create(){
   TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' ");
   TwAddButton(bar, "", apply_mask, NULL, " label='Toggle 3D Mask' ");
   TwAddButton(bar, "", load_file_truth, NULL, " label='Load truth' ");
+  TwAddButton(bar, "", apply_truth, NULL, " label='Do work.' ");
 
   TwAddSeparator(bar, "File.", NULL);
   ///and now the slice control:
@@ -227,6 +229,9 @@ void TW_CALL GuiContainer::load_file( void * UserData){
     the_gui->pnt->load(in.c_str());
     the_gui->pnt->find_surface();
   };
+
+  get_active_surfaces()->clear();
+
   the_gui->pnt->update(); //and make sure all is shown up.....
 
 };
@@ -411,30 +416,55 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
   
 };
 
-void TW_CALL GuiContainer::load_file_truth( void * UserData){
-
+void TW_CALL GuiContainer::load_file_truth( void * UserData)
+{
   printf("Trying to load a file.\n");
   std::string in = getFile();
+
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
-    //    read_voxels(in, the_gui->pnt, false, true, false);
-    //   read_voxels(in, the_gui->pnt, false, true, true);
+    Surface it;
+    read_surface(it, in);
+    printf("Obtained %d vertices, and %d triangles, thanks for asking.\n",
+	   (int)it.n.size(), (int)(it.idx.size() / 3));
+    
+    RenderingTraits t = {0, false, true, true};
+    rasterize_surface(it, *the_gui->pnt, t);
 
-  };
+    get_active_surfaces()->push_back(it);
+  };  
+};
 
-  ///now, try the surface
-  Surface it;
-  
-  read_surface(it, in);
+void do_all_work(GlPoints * pnt){
+  pnt->vol.markers.clear();
 
-  printf("Obtained %d vertices, and %d triangles, thanks for asking.\n",
-	 (int)it.n.size(), (int)(it.idx.size() / 3));
+  for(int i = pnt->vol.getOffset(1,1,1); i <= pnt->vol.getOffset(255,255,255); i++)
+    {
+      if((pnt->vol.depth[i] < 10) && !(pnt->vol.mask[i] & (TRU | ZRO | MASK))){
+	//if there is a truth nearby, we can mark our pos.
+	for(int nbr = 0; nbr < 6; nbr++){
+	  int cur_nbr = i+pnt->vol.neighbours[nbr];
+	  if(TRU & pnt->vol.mask[cur_nbr]){
+	    //ok, we are interested; there is truth somewhere here;
+	    pnt->vol.markers.push_back(i);
+	    pnt->vol.mask[i] |= MASK;
+	    break;
+	  };
+	};
+      };
+    };
 
-  //RenderingTraits t = {0, false, false, true};
+  //ok, got interesting points; now propagating.
+  pnt->vol.propagate(1000, 0, 10, 10);
+  pnt->vol.updated = true;
+  pnt->update(); //and make sure all is shown up.....
 
-  //rasterize_surface(it, *the_gui->pnt, t);
+}
 
-  
+void TW_CALL GuiContainer::apply_truth( void * UserData)
+{
+  printf("Removing everything close to ground truth.\n");
+  do_all_work(the_gui->pnt);
 };
 
 void TW_CALL GuiContainer::switch_crossections( void * UserData){

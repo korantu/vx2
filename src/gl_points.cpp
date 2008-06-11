@@ -5,7 +5,7 @@
 #include <string>
 #include "misc.h"
 #include "native.h"
-
+#include "surface.h"
 
 void GlPoints::set_level(float l){
   // vol.reset();
@@ -165,6 +165,36 @@ void GlPoints::update(){
 
 };
 
+void init_lighting(V3f pos) 
+{
+  pos += V3f(pos.y/3, pos.z/3, pos.x/3);
+  //   GLfloat mat_specular[] = { 1.0, 0.0, 0.0, 1.0 };
+  //  GLfloat mat_shininess[] = { 2.0 };
+   GLfloat light_position[] = { pos.x, pos.y, pos.z, 0.0 };
+   GLfloat ambient_color[] = { 1,0,0, 1};
+   GLfloat diffuse_color[] = { 0,1,1,1};
+   GLfloat specular_color[] = {0,1,1,1};
+   
+
+
+   glShadeModel (GL_SMOOTH);
+
+   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+   glLightfv(GL_LIGHT0, GL_AMBIENT, ambient_color);
+   glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_color);
+   glLightfv(GL_LIGHT0, GL_SPECULAR, specular_color);
+
+   glMaterialfv ( GL_FRONT_AND_BACK, GL_SPECULAR, specular_color ) ;
+   glMaterialfv ( GL_FRONT_AND_BACK, GL_EMISSION, ambient_color); 
+
+   glEnable(GL_LIGHTING);
+   glEnable(GL_LIGHT0);
+   glEnable(GL_DEPTH_TEST);
+   glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+
+}
+
+
 void GlPoints::draw(V3f zaxis){
 
   int cursor_size = 10;
@@ -214,7 +244,34 @@ void GlPoints::draw(V3f zaxis){
   };
 
   glEnd();
- 
+
+  vector<Surface> * s = get_active_surfaces();
+
+  //glPointSize(1.0);
+
+  // init_lighting(zaxis+V3f(0.3, 0.3, 0.3));
+  
+  //I am not able to set up a sane lighting in OpenGL
+  //wtf?
+
+  glBegin(GL_TRIANGLES);
+  for(vector<Surface>::const_iterator surf = s->begin(); surf != s->end(); surf++){
+    for(int i = 0; i < (int)surf->idx.size()-3; i+=3){
+      for(int j = 0; j < 3; j++){
+	int idx = surf->idx[i+j];
+	float a = zaxis.dot(surf->n[idx]);
+	a = a*a*a;
+	//a *=a;
+	if(a < 0.3)a=0.3;
+	glColor3f(a/4,a/3,a*1.5);
+	glVertex3f(surf->v[idx].x, surf->v[idx].y, surf->v[idx].z );
+      };
+    };
+  };
+  glEnd();
+
+  glDisable(GL_LIGHTING);
+
   glEnable (GL_BLEND); 
   glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
