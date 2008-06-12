@@ -194,8 +194,10 @@ void rasterize_surface(Surface & surf,
   for(int i = 0; i < 256*256*256; i++)
     pnt.vol.mask[i] -= (pnt.vol.mask[i] & TRU);
   }else{
-  for(int i = 0; i < 256*256*256; i++)
-    if(pnt.vol.mask[i] & MASK)pnt.vol.mask[i] |= TRU;    
+    for(int i = 0; i < 256*256*256; i++){
+      if(pnt.vol.mask[i] & MASK)pnt.vol.mask[i] |= TRU;    
+      pnt.vol.mask[i] -= pnt.vol.mask[i] & MASK;
+    };
   };
 };
   

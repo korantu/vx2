@@ -348,7 +348,7 @@ void GlPoints::apply(){
     for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++){
       //saving truth
       if(truth_backup)truth_backup[i] = (vol.mask[i] & TRU)?1:0;
-      if(vol.mask[i] & (MASK | TRU)){
+      if(vol.mask[i] & (MASK)){
 	backup_point pnt = {i, vol.vol[i], vol.mask[i]};
 	backup.push_back(pnt);
 	vol.vol[i] = 0;
