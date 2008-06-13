@@ -195,6 +195,18 @@ void init_lighting(V3f pos)
 }
 
 
+struct compare_tris{
+  V3f & axis;
+  const Surface & surface;
+  
+  compare_tris(V3f & _axis, const Surface & _surface): axis(_axis), surface(_surface){
+  }; 
+
+  int operator() (const V3i & a, const V3i b) const{
+    return surface.v[a[0]].dot(axis) < surface.v[b[0]].dot(axis);
+  };
+};
+
 void GlPoints::draw(V3f zaxis){
 
   int cursor_size = 10;
@@ -254,26 +266,48 @@ void GlPoints::draw(V3f zaxis){
   //I am not able to set up a sane lighting in OpenGL
   //wtf?
 
+  //sorting.
+  /*
+  glBegin(GL_QUADS);
+  glColor3f(0.4,0.8,0.1);
+  glVertex3f(0,0,125);
+  glVertex3f(0,255,125);
+  glVertex3f(255,255,125);
+  glVertex3f(255,0,125);
+  glEnd();
+  */
+  glEnable (GL_BLEND); 
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
   glBegin(GL_TRIANGLES);
-  for(vector<Surface>::const_iterator surf = s->begin(); surf != s->end(); surf++){
-    for(int i = 0; i < (int)surf->idx.size()-3; i+=3){
-      for(int j = 0; j < 3; j++){
-	int idx = surf->idx[i+j];
+  for(vector<Surface>::iterator surf = s->begin(); surf != s->end(); surf++){
+
+    //each surface surf
+
+    //    compare_tris criterion(zaxis, *surf);
+    //    std::sort(surf->tri.begin(), surf->tri.end(), criterion);
+
+    for(vector<V3i>::const_iterator tri = surf->tri.begin(); tri != surf->tri.end(); tri++){
+      //each vertex
+      for(int corner = 0; corner < 3; corner++){
+	int idx = (*tri)[corner];
 	float a = zaxis.dot(surf->n[idx]);
-	a = a*a*a;
-	//a *=a;
+	a = a*a*a*a;
+	//a *=;
 	if(a < 0.3)a=0.3;
-	glColor3f(a/4,a/3,a*1.5);
-	glVertex3f(surf->v[idx].x, surf->v[idx].y, surf->v[idx].z );
+	//float transparency = smooth_bell((surf->v[idx][2]-125)/5);
+	//transparency *= transparency;
+	//transparency *= transparency;
+	//	glColor4f(a/4,a/3,a*1.5, 0.1+transparency);
+       	glColor3f(a/4,a/3,a*1.5); 
+	glVertex3f( surf->v[idx].x , surf->v[idx].y , surf->v[idx].z );
       };
-    };
+    };    
   };
   glEnd();
 
   glDisable(GL_LIGHTING);
-
-  glEnable (GL_BLEND); 
-  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   if(tw_pnt_smooth)
     glEnable(GL_POINT_SMOOTH);
@@ -303,6 +337,7 @@ void GlPoints::draw(V3f zaxis){
   sort(list[cur_level].begin(), list[cur_level].end(), psortable(zaxis));
 
   int r,g,b;
+  
 
   glBegin(GL_POINTS);
   for(std::vector<int>::iterator i = list[cur_level].begin(); i != list[cur_level].end(); i++){
@@ -315,6 +350,8 @@ void GlPoints::draw(V3f zaxis){
     glVertex3i(x,y,z);
   };
   glEnd();
+
+  
   glDepthMask(GL_TRUE);
   
 

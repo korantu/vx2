@@ -23,11 +23,15 @@ struct Surface{
   vector<V3f> n;
   vector<V3f> v;
 
-  vector<int> idx; //3 per triangle
+  vector<V3i> tri;
 
   int n_tris;
   
 };
+
+int surface_tris(Surface &);
+void surface_points(int n, int &, int &, int &);
+void surface_sort(V3f);
 
 vector<Surface> * get_active_surfaces();
 

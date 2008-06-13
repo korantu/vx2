@@ -59,9 +59,7 @@ bool read_surface(Surface & surf, std::string name){
     //int m[3];
     fscanf(f, "%d %d %d %d\n", &a, &b, &c, &zero);
     //Life sucks...and the answer is in fact 43.
-    surf.idx.push_back(a);
-    surf.idx.push_back(b);
-    surf.idx.push_back(c);
+    surf.tri.push_back(V3i(a,b,c));
     if(i < 3)printf("((%d %d %d))\n", a, b, c);
   
     V3f n; n.cross(surf.v[b]-surf.v[a], surf.v[c]-surf.v[a]);
@@ -165,17 +163,18 @@ void rasterize_surface(Surface & surf,
   //  std::vector<int> tristor; //triangle storage
 
   //loop trough every triangle and refine it.
-  for(unsigned int i = 0; i < surf.idx.size()-3; i+=3){
+  for(vector<V3i>::const_iterator i = surf.tri.begin(); 
+      i != surf.tri.end(); i++){
 
-    V3f a(surf.v[surf.idx[i]]);
-    V3f b(surf.v[surf.idx[i+1]]);
-    V3f c(surf.v[surf.idx[i+2]]);
+    V3f a(surf.v[i->x]);
+    V3f b(surf.v[i->y]);
+    V3f c(surf.v[i->z]);
     /*
     printf("Rendering...\n");
     for(int h = 0; h < 3; h++)
       printf("a:%f, b:%f, c:%f\n", m[h].x, m[h].y, m[h].z);
     */
-    refine_triangle(a, b, c, pnt,  surf.n[surf.idx[i]], t); 
+    refine_triangle(a, b, c, pnt,  surf.n[i->x], t); 
   };
   
   if(t.inside){

@@ -32,6 +32,7 @@ struct GuiContainer{
   float coverage;
   int depth;
   int propagator_type; //what kind of propagation do we want
+  int radius; //influence radius
 
   //2d options
 
@@ -50,6 +51,7 @@ struct GuiContainer{
   static void TW_CALL load_mask( void * );
   static void TW_CALL save_mask( void * );
   static void TW_CALL load_file_truth( void * );
+  static void TW_CALL grow_truth( void * );
   static void TW_CALL apply_truth( void * ); //remove voxels around ground truth
   static void TW_CALL apply_mask( void * );
   static void TW_CALL reseed( void * );
@@ -95,7 +97,8 @@ GuiContainer::GuiContainer(slices * _sl, GlPoints * _pnt):
   zoom(1),
   coverage(0.25),
   depth(10),
-  propagator_type(1)
+  propagator_type(1),
+  radius(30)
 {
   bar = TwNewBar("Options");
 };
@@ -172,7 +175,7 @@ void GuiContainer::create(){
   TwAddSeparator(bar, "Editing.", NULL);
   //TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
   TwAddVarRW(bar, "Editing tool", modesType, &pnt->tool, "keyIncr=r keyDecr=t");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=6 step=1 label='Tool size' help='Point size' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=60 step=1 label='Tool size' help='Point size' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=1000 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead.' help='Skip this many voxels in search for suitable areas.' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &depth, " min=0 max=256 step=1 label='Depth' help='Go no deeper than this value. 0 means no limit' ");
@@ -187,6 +190,8 @@ void GuiContainer::create(){
   TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' ");
   TwAddButton(bar, "", apply_mask, NULL, " label='Toggle 3D Mask' ");
   TwAddButton(bar, "", load_file_truth, NULL, " label='Load truth' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &radius, " min=1 max=60 step=1 label='Grow radius' help='The size of the area where we want to grow the truth' ");
+  TwAddButton(bar, "", grow_truth, NULL, " label='Grow truth' ");
   TwAddButton(bar, "", apply_truth, NULL, " label='Do work.' ");
 
   TwAddSeparator(bar, "File.", NULL);
@@ -416,6 +421,32 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
   
 };
 
+void do_grow_truth(FastVolume & v, V3f where, int radius){
+  for(int i = 0; i <3; i++){
+    radius = (where[i]+radius > 255)?255-where[i]:radius;
+    radius = (where[i]-radius < 1)?(where[i]-1):radius;
+    if(radius < 0)radius = 0;
+  };
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(!(v.mask[offset] & (TRU | ZRO | MASK ) )){
+	  //checking neighbours
+	  for(int nbr = 0; nbr < 6; nbr++){
+	    if(v.mask[offset+v.neighbours[nbr]] & TRU)
+	      v.mask[offset+v.neighbours[nbr]] |= TRU;
+	  };
+	};
+      };
+};
+
+void TW_CALL GuiContainer::grow_truth( void * UserData){
+  do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
+  the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+};
+
 void TW_CALL GuiContainer::load_file_truth( void * UserData)
 {
   printf("Trying to load a file.\n");
@@ -426,7 +457,7 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData)
     Surface it;
     read_surface(it, in);
     printf("Obtained %d vertices, and %d triangles, thanks for asking.\n",
-	   (int)it.n.size(), (int)(it.idx.size() / 3));
+	   (int)it.n.size(), (int)it.tri.size() );
     
     RenderingTraits t = {0, false, true, true};
     rasterize_surface(it, *the_gui->pnt, t);
@@ -455,7 +486,7 @@ void do_all_work(GlPoints * pnt){
     };
 
   //ok, got interesting points; now propagating.
-  pnt->vol.propagate(1000, 0, 10, 10);
+  pnt->vol.propagate(1000, 8, 10, 4);
   pnt->vol.updated = true;
   pnt->update(); //and make sure all is shown up.....
 
