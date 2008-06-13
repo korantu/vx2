@@ -52,6 +52,7 @@ struct GuiContainer{
   static void TW_CALL save_mask( void * );
   static void TW_CALL load_file_truth( void * );
   static void TW_CALL grow_truth( void * );
+  static void TW_CALL erode_truth( void * );
   static void TW_CALL apply_truth( void * ); //remove voxels around ground truth
   static void TW_CALL apply_mask( void * );
   static void TW_CALL reseed( void * );
@@ -98,7 +99,7 @@ GuiContainer::GuiContainer(slices * _sl, GlPoints * _pnt):
   coverage(0.25),
   depth(10),
   propagator_type(1),
-  radius(30)
+  radius(15)
 {
   bar = TwNewBar("Options");
 };
@@ -192,6 +193,7 @@ void GuiContainer::create(){
   TwAddButton(bar, "", load_file_truth, NULL, " label='Load truth' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &radius, " min=1 max=60 step=1 label='Grow radius' help='The size of the area where we want to grow the truth' ");
   TwAddButton(bar, "", grow_truth, NULL, " label='Grow truth' ");
+  TwAddButton(bar, "", erode_truth, NULL, " label='Erode truth' ");
   TwAddButton(bar, "", apply_truth, NULL, " label='Do work.' ");
 
   TwAddSeparator(bar, "File.", NULL);
@@ -435,14 +437,56 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 	  //checking neighbours
 	  for(int nbr = 0; nbr < 6; nbr++){
 	    if(v.mask[offset+v.neighbours[nbr]] & TRU)
-	      v.mask[offset+v.neighbours[nbr]] |= TRU;
+	      v.mask[offset] |= AUX;
 	  };
 	};
+      };
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(v.mask[offset] & AUX){
+	  v.mask[offset] -= AUX;
+	  v.mask[offset] |= TRU;
+	};
+      };
+};
+
+void do_erode_truth(FastVolume & v, V3f where, int radius){
+  for(int i = 0; i <3; i++){
+    radius = (where[i]+radius > 255)?255-where[i]:radius;
+    radius = (where[i]-radius < 1)?(where[i]-1):radius;
+    if(radius < 0)radius = 0;
+  };
+
+  int depth = 1000;
+
+  //what is the least deep part
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(v.mask[offset] & TRU){
+	  if(depth > v.depth[offset])depth = v.depth[offset];
+	};
+      };
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(v.depth[offset] == depth)
+	  v.mask[offset] -= (TRU & v.mask[offset]);
       };
 };
 
 void TW_CALL GuiContainer::grow_truth( void * UserData){
   do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
+  the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+};
+
+void TW_CALL GuiContainer::erode_truth( void * UserData){
+  do_erode_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
   the_gui->pnt->vol.updated = true;
   the_gui->pnt->update(); //and make sure all is shown up.....
 };
