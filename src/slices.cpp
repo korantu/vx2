@@ -70,7 +70,7 @@ bool slices::locate(V3f pos, int &x, int &y){
   x = x_orig + xo*tile_w + (tile_w/2) + (idx*zoom);
   y = y_orig + yo*tile_h + (tile_h/2) + (idy*zoom);
   
-
+  return true;
 };
 
 void draw_line(V3f a, V3f b){
@@ -136,6 +136,10 @@ void slices::draw(){
   int x; int y; int cs = 10*zoom;
   
   locate(pnts->cursor, x, y);
+  printf("Setting cursor at %f %f %f, getting %d %d\n", pnts->cursor.x, 
+	 pnts->cursor.y,
+	 pnts->cursor.z, x, y);
+  //locate(center, x, y);
   
   glDisable(GL_DEPTH_TEST);
   

@@ -105,6 +105,10 @@ struct main_module : public gl_wrapper_reciever {
     
   };
   void do_key(){
+    if(st.k >= 49 && st.k <= 54){
+      printf("Trying to do a key... %d", st.k);
+      volume.tool = (st.k - 49);
+    };
   };
 
   void do_mouse(){
@@ -117,9 +121,9 @@ struct main_module : public gl_wrapper_reciever {
       bool picked = crossection.pick(st.x, st.y, res);
       if(picked){
 	crossection.display_center = res;
-	printf("Trying to set the window to %d %d %d !!!\n", volume.cursor.x, 
-	       volume.cursor.y, 
-	       volume.cursor.z);
+	printf("Trying to set the window to %d %d %d !!!\n", (int)volume.cursor.x, 
+	       (int)volume.cursor.y, 
+	       (int)volume.cursor.z);
 	volume.set_cursor(res);
 	printf("Picked...%f %f %f\n", res.x, res.y, res.z);
 	crossection.update();
@@ -141,9 +145,9 @@ struct main_module : public gl_wrapper_reciever {
       }else{
 	volume.pick(st.x, st.height-st.y);
 	crossection.display_center = volume.cursor;
-	printf("Trying to set the window to %d %d %d !!!\n", volume.cursor.x, 
-	       volume.cursor.y, 
-	       volume.cursor.z);
+	printf("Trying to set the window to %d %d %d !!!\n", (int)volume.cursor.x, 
+	       (int)volume.cursor.y, 
+	       (int)volume.cursor.z);
 	crossection.update(volume.vol, volume.cursor);
       };
       render_required = true;
@@ -390,9 +394,9 @@ void join(main_module & core, string a, string b, string res)
   core.volume.loader.cur_plane = Loader::MASK_PLANE; //b goes into mask
   core.volume.load(b.c_str());
 
-  int matches = 0;
-  int only_a = 0;
-  int only_b = 0;
+  //int matches = 0;
+  //int only_a = 0;
+  //int only_b = 0;
   for(int i = 0; i < 256*256*256; i++){
     if(core.volume.vol.vol[i] > 0)core.volume.vol.mask[i] |= MSK;
   };

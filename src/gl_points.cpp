@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "misc.h"
 #include "native.h"
-
+#include "surface.h"
 
 void GlPoints::set_level(float l){
   // vol.reset();
@@ -45,8 +45,12 @@ void GlPoints::set_level(float l){
 };
 
 std::string default_name("brainmask.mgz");
+void reset_3d_mask();
 
 bool GlPoints::load(const char * in){
+
+  reset_3d_mask();
+
   if(in)default_name = std::string(in);
   try{
     int cnt = loader.read(default_name);
@@ -61,12 +65,14 @@ bool GlPoints::load(const char * in){
     return false;
   };
   return true;
+
+  
 };
 
 void GlPoints::find_surface(){
   set_level(1);
   for(int ll = 1; ll < 10; ll++)
-    printf("found %d points at level %d.\n", list[ll].size(), ll);
+    printf("found %d points at level %d.\n", (int)list[ll].size(), ll);
 };
 
 bool GlPoints::save(const char * out){
@@ -156,9 +162,51 @@ void GlPoints::update(){
 
   };
   printf("seeds: %d, passive border: %d\n", 
-	 the_markers.size(), 
-	 the_marked.size());
+	 (int)the_markers.size(), 
+	 (int)the_marked.size());
 
+};
+
+void init_lighting(V3f pos) 
+{
+  pos += V3f(pos.y/3, pos.z/3, pos.x/3);
+  //   GLfloat mat_specular[] = { 1.0, 0.0, 0.0, 1.0 };
+  //  GLfloat mat_shininess[] = { 2.0 };
+   GLfloat light_position[] = { pos.x, pos.y, pos.z, 0.0 };
+   GLfloat ambient_color[] = { 1,0,0, 1};
+   GLfloat diffuse_color[] = { 0,1,1,1};
+   GLfloat specular_color[] = {0,1,1,1};
+   
+
+
+   glShadeModel (GL_SMOOTH);
+
+   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+   glLightfv(GL_LIGHT0, GL_AMBIENT, ambient_color);
+   glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_color);
+   glLightfv(GL_LIGHT0, GL_SPECULAR, specular_color);
+
+   glMaterialfv ( GL_FRONT_AND_BACK, GL_SPECULAR, specular_color ) ;
+   glMaterialfv ( GL_FRONT_AND_BACK, GL_EMISSION, ambient_color); 
+
+   glEnable(GL_LIGHTING);
+   glEnable(GL_LIGHT0);
+   glEnable(GL_DEPTH_TEST);
+   glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+
+}
+
+
+struct compare_tris{
+  V3f & axis;
+  const Surface & surface;
+  
+  compare_tris(V3f & _axis, const Surface & _surface): axis(_axis), surface(_surface){
+  }; 
+
+  int operator() (const V3i & a, const V3i b) const{
+    return surface.v[a[0]].dot(axis) < surface.v[b[0]].dot(axis);
+  };
 };
 
 void GlPoints::draw(V3f zaxis){
@@ -210,9 +258,58 @@ void GlPoints::draw(V3f zaxis){
   };
 
   glEnd();
- 
+
+  vector<Surface> * s = get_active_surfaces();
+
+  //glPointSize(1.0);
+
+  // init_lighting(zaxis+V3f(0.3, 0.3, 0.3));
+  
+  //I am not able to set up a sane lighting in OpenGL
+  //wtf?
+
+  //sorting.
+  /*
+  glBegin(GL_QUADS);
+  glColor3f(0.4,0.8,0.1);
+  glVertex3f(0,0,125);
+  glVertex3f(0,255,125);
+  glVertex3f(255,255,125);
+  glVertex3f(255,0,125);
+  glEnd();
+  */
   glEnable (GL_BLEND); 
   glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+  glBegin(GL_TRIANGLES);
+  for(vector<Surface>::iterator surf = s->begin(); surf != s->end(); surf++){
+
+    //each surface surf
+
+    //    compare_tris criterion(zaxis, *surf);
+    //    std::sort(surf->tri.begin(), surf->tri.end(), criterion);
+
+    for(vector<V3i>::const_iterator tri = surf->tri.begin(); tri != surf->tri.end(); tri++){
+      //each vertex
+      for(int corner = 0; corner < 3; corner++){
+	int idx = (*tri)[corner];
+	float a = zaxis.dot(surf->n[idx]);
+	a = a*a*a*a;
+	//a *=;
+	if(a < 0.3)a=0.3;
+	//float transparency = smooth_bell((surf->v[idx][2]-125)/5);
+	//transparency *= transparency;
+	//transparency *= transparency;
+        //glColor4f(a/4,a/3,a*1.5, 0.1+transparency);
+       	glColor3f(a/4,a/3,a*1.5);
+        glVertex3f( surf->v[idx].x , surf->v[idx].y , surf->v[idx].z );
+      };
+    };    
+  };
+  glEnd();
+
+  glDisable(GL_LIGHTING);
 
   if(tw_pnt_smooth)
     glEnable(GL_POINT_SMOOTH);
@@ -242,6 +339,7 @@ void GlPoints::draw(V3f zaxis){
   std::sort(list[cur_level].begin(), list[cur_level].end(), psortable(zaxis));
 
   int r,g,b;
+  
 
   glBegin(GL_POINTS);
   for(std::vector<int>::iterator i = list[cur_level].begin(); i != list[cur_level].end(); i++){
@@ -254,6 +352,8 @@ void GlPoints::draw(V3f zaxis){
     glVertex3i(x,y,z);
   };
   glEnd();
+
+  
   glDepthMask(GL_TRUE);
   
 
@@ -271,11 +371,23 @@ std::vector<backup_point> backup;
 std::vector<int> old_mask;
 std::vector<int> old_values;
 
+void reset_3d_mask(){
+  backup.clear();
+  old_mask.clear();
+  old_values.clear();
+};
+
 void GlPoints::apply(){
+
+  //we don't care if the allocation fails; just dont' use it if it is null
   
   if(backup.size() == 0){
+    char * truth_backup;
+    truth_backup  = new char[256*256*256];
     for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++){
-      if(vol.mask[i] & MASK){
+      //saving truth
+      if(truth_backup)truth_backup[i] = (vol.mask[i] & TRU)?1:0;
+      if(vol.mask[i] & (MASK)){
 	backup_point pnt = {i, vol.vol[i], vol.mask[i]};
 	backup.push_back(pnt);
 	vol.vol[i] = 0;
@@ -283,8 +395,15 @@ void GlPoints::apply(){
 	vol.mask[i] -= (vol.mask[i] & MASK); //and not a mask.
       };
     };
-    printf("Saved %d points to be restored later...\n", backup.size());
+    printf("Saved %d points to be restored later...\n", (int)backup.size());
     vol.reset();
+    //reverting truth if possible;
+    if(truth_backup){
+      for(int i = vol.getOffset(1,1,1); i <= vol.getOffset(255,255,255); i++){
+	vol.mask[i] |= truth_backup[i]?TRU:0;
+      };
+      delete[] truth_backup; //no need already;
+    };
   }else{ //got a backup to restore.
     for(std::vector<backup_point>::iterator p = backup.begin(); p != backup.end(); p++){
       backup_point pnt = *p;
@@ -292,7 +411,7 @@ void GlPoints::apply(){
       vol.mask[pnt.pos] = pnt.mask;
       if(pnt.mask & BDR)vol.markers.push_back(pnt.pos);
     };
-    printf("Allegedly restored %d points. \n", backup.size());
+    printf("Allegedly restored %d points. \n", (int)backup.size());
     backup.clear(); //next time apply, not restore.
   };
   //set_level(1);

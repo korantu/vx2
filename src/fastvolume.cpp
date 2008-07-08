@@ -164,7 +164,7 @@ void FastVolume::findSurface(std::vector<int> & res, int border){
   };
 };
 
-
+/*
 void FastVolume::iterate(Iterator & it){
   for(int z = 1; z < 0xfe; z++)
     for(int y = 1; y < 0xfe; y++){
@@ -173,7 +173,7 @@ void FastVolume::iterate(Iterator & it){
       it.line(cur, max_cur);
      };
 };
-
+*/
 
 inline bool valid(int x, int y, int z){
   return ((x < 256) && (y < 256) && (z < 256) && (x > 0) && (y > 0) && (z > 0)); 
@@ -236,7 +236,6 @@ void FastVolume::add_point(V3f &pnt){
 //here we add tools; to be replaced with proper structures
 void FastVolume::use_tool(int idx, int what, int sz){
   int x, y, z;
-  int xi, yi, zi;
   int c;
 
   if(!what)return;
@@ -267,7 +266,7 @@ void FastVolume::use_tool(int idx, int what, int sz){
 	case 3: //de-prime
 	  if(mask[c] & BDR){
 	    mask[c] -= (mask[c] & BDR); 
-	    for(int k = 0; k < markers.size(); k++)
+	    for(unsigned int k = 0; k < markers.size(); k++)
 	      if(markers[k] == c)markers[k] = 500; 
 	    //set it to some arbitrary out of brain point
 	  };
@@ -330,6 +329,7 @@ bool lookahead_spread(FastVolume * in, std::vector<int> &res, int start, int dir
 
 /// make a single step of propagation
 //a structure for stepping in different ways.
+/*
 struct stepper{
   FastVolume & v;
   stepper(FastVolume & _v): v(_v){};
@@ -394,6 +394,9 @@ void jumping_stepper::make_step(const std::vector<int> & in, std::vector<int> & 
       };
     };  
 };
+
+*/
+
 /*
 void FastVolume::propagate_jump(int threshold, int dist, int max_depth, int times){
   // cur_gen++;
@@ -491,7 +494,7 @@ void FastVolume::set_band(){
 void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int times){
 
   // cur_gen++;
-  int cur, cur_val, cursor_idx;
+  int cur, cur_val;//, cursor_idx;
   std::vector<int> res;
   int cur_idx;  
 
@@ -588,7 +591,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
     // (really-really dun wan to sort)  
 
     //ok, got scores too... let us propagate scores for fun
-    int thr = min + ((max-min) / 4);
+    //int thr = min + ((max-min) / 4);
 
     //3. Well... seems like sorting _is_ importand;
     step tmp;
@@ -602,7 +605,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       bool go = cnt > (steps.size()*0.9);
       if(steps.size() < 10)go=cnt > ((steps.size()*0.5));
       if(steps.size() == 1)go=true;
-      if(steps.size() > 100)go=cnt>(steps.size()-10);
+      if(steps.size() > 100)go=(unsigned int)cnt>(steps.size()-10);
       int interesting = (go)?(i->to):(i->from);
       //now, use that interesting point and add it to be active,
       //if it is still not
@@ -620,7 +623,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
     //ok, we are done; clear everything and off to the next round. YAHOO!!!
     markers = res;
     steps.clear();
-    printf("Markers %d\n", markers.size());
+    printf("Markers %d\n", (int)markers.size());
   };
 
   if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
@@ -630,7 +633,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
 void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
   // cur_gen++;
-  int cur, cur_val, cursor_idx;
+  int cur, cur_val;//, cursor_idx;
   std::vector<int> res;
   int cur_idx;  
 
@@ -675,7 +678,7 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
      }; //in scope
     };
     markers = res;
-    printf("Markers %d\n", markers.size());
+    printf("Markers %d\n", (int)markers.size());
   };
   if(cur_gen > (GEN_MAX-3))downshift(MASK);
 

@@ -60,8 +60,9 @@ Basic misc definitions
                                            y = a.z*b.x-a.x*b.z;
 					   z = a.x*b.y-a.y*b.x;
                                            return *this;};  
-      float dot(const V3 & a){ return x*a.x+y*a.y+z*a.z;};
+      float dot(const V3 & a) const { return x*a.x+y*a.y+z*a.z;};
 
+      T operator[] (int i) const {return ((const T *)(&x))[i];};
     
     };
 

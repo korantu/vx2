@@ -1,4 +1,4 @@
-CXXFLAGS := -DUSE_TW -g -O2 -I../include  -I../deps/anttweakbar/include -I../deps/glfw/include -I../deps/glfw/include/GL 
+CXXFLAGS := -DUSE_TW -g -O2 -Wall -I../include  -I../deps/anttweakbar/include -I../deps/glfw/include -I../deps/glfw/include/GL 
 LINKFLAGS := ../deps/glfw/lib/x11/libglfw.a ../deps/anttweakbar/lib/libant.a -lX11 -lXrandr -lGL -lGLU -lz   
 TEST := ../deps/unit--/unit--.o
 T_VOLUME := t_fastvolume.o fastvolume.o loader.o  

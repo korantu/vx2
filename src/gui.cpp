@@ -1,6 +1,8 @@
 
 #include "gui.h"
 #include "native.h"
+#include "surface.h"
+
 #include <vector>
 #include <string>
 #include <AntTweakBar.h>
@@ -23,15 +25,16 @@ struct GuiContainer{
   int threshold;
   int generation;
   int amount;
-  int depth;
   int iterations;
-  int propagator_type; //what kind of propagation do we want
-
-  //2d options
   int size;
   int scheme;
   int zoom;
   float coverage;
+  int depth;
+  int propagator_type; //what kind of propagation do we want
+  int radius; //influence radius
+
+  //2d options
 
   
 
@@ -42,17 +45,22 @@ struct GuiContainer{
   static void TW_CALL set_level(const void * value, void * );
   static void TW_CALL load_file( void * );
   static void TW_CALL test_shape( void * );
+  static void TW_CALL test_button( void * );
   static void TW_CALL save_file( void * );
   static void TW_CALL save_file_as( void * );
   static void TW_CALL load_mask( void * );
   static void TW_CALL save_mask( void * );
   static void TW_CALL load_file_truth( void * );
+  static void TW_CALL grow_truth( void * );
+  static void TW_CALL erode_truth( void * );
+  static void TW_CALL apply_truth( void * ); //remove voxels around ground truth
   static void TW_CALL apply_mask( void * );
   static void TW_CALL reseed( void * );
   static void TW_CALL kill_seeds( void * );
   static void TW_CALL switch_crossections( void * );
   static void TW_CALL set_band( void * );
   static void TW_CALL step( void * );
+  static void TW_CALL step_all( void * );
   static void TW_CALL remove_hanging_pieces( void * );
   static void TW_CALL undo( void * );
   static void TW_CALL get_size(void * value, void * );
@@ -91,7 +99,8 @@ GuiContainer::GuiContainer(slices * _sl, GlPoints * _pnt):
   zoom(1),
   coverage(0.25),
   depth(10),
-  propagator_type(1)
+  propagator_type(1),
+  radius(15)
 {
   bar = TwNewBar("Options");
 };
@@ -109,15 +118,15 @@ void GuiContainer::create(){
 
   TwEnumVal modesEV[] = { 
     {0, "Browse"}, 
-    {1, "Add seeds"},
-    {2, "Reseed"},
-    {3, "Deseed"},
-    {4, "Add truth"},
-    {5, "Clear"}};
+    {1, "Extend propagation front"},
+    {2, "Enable propagation"},
+    {3, "Inhibit propagation"},
+    {4, "Add ground truth"},
+    {5, "Clear all modifications"}};
   TwType modesType = TwDefineEnum("ModeType", modesEV, 6);
 
   TwEnumVal propagatorsEV[] = { 
-    {0, "Jump"}, 
+    {0, "Threshold"}, 
     {1, "Similarity"}};
   TwType propagatorType = TwDefineEnum("PropagatorsType", propagatorsEV, 2);
 
@@ -143,53 +152,55 @@ void GuiContainer::create(){
   TwDefine(" GLOBAL help='Voxelbrain Voxel editor.' "); // Message added to the help bar.
   TwDefine("Options size='200 600'");
   pnt->tw_pnt = 1.0;
-  TwAddButton(bar, "", load_file, NULL, "label='Load'");
-  TwAddButton(bar, "", save_file, NULL, "label='Save'");
-  TwAddButton(bar, "", save_file_as, NULL, "label='Save As'");
-  TwAddButton(bar, "", test_shape, NULL, "label='Test Shape'");
-  TwAddVarRW(bar, "IO Type", ioType, &pnt->loader.cur_plane, "");
-  TwAddSeparator(bar, "Operation.", NULL);
-  TwAddVarRW(bar, "", TW_TYPE_DOUBLE, &pnt->tw_pnt, " label='Point size' min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
-  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_transparency, " label='Transparency' min=0.1 max=1 step=0.01 keyIncr=d keyDecr=D help='Transparency' ");
+  TwAddButton(bar, "", load_file, NULL, "label='Load' group=File");
+  TwAddButton(bar, "", save_file, NULL, "label='Save' group=File");
+  TwAddButton(bar, "", save_file_as, NULL, "label='Save As' group=File");
+  TwAddVarRW(bar, "IO Type", ioType, &pnt->loader.cur_plane, "group=File");
+  TwAddVarRW(bar, "", TW_TYPE_DOUBLE, &pnt->tw_pnt, " label='Point size' group=Visualization min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
+  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_transparency, " label='Transparency' group=Visualization min=0.1 max=1 step=0.01 keyIncr=d keyDecr=D help='Transparency' ");
   pnt->tw_pnt_smooth=true;
-  TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &pnt->tw_pnt_smooth, " label='Smooth points' keyIncr=v keyDecr=V help='Size of the display points. ' ");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->cur_level, " label='Shave' min=0 max=14 step=1 help='Show underlying layers' ");
+  TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &pnt->tw_pnt_smooth, " label='Smooth points' group=Visualization keyIncr=v keyDecr=V help='Size of the display points. ' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->cur_level, " label='Voxel layer' group=Visualization min=0 max=14 step=1 help='Show underlying layers' ");
 
   //display cursor
-  TwAddSeparator(bar, "Position.", NULL);
-  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->cursor.x, " label='X' help='Cursor X' ");
-  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->cursor.y, " label='Y' help='Cursor Y' ");
-  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->cursor.z, " label='Z' help='Cursor Z' ");
+  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->cursor.x, " label='X' help='Cursor X'  group=Cursor");
+  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->cursor.y, " label='Y' help='Cursor Y' group=Cursor ");
+  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->cursor.z, " label='Z' group='Cursor' help='Cursor Z' ");
+  TwAddVarRO(bar, "", TW_TYPE_FLOAT, &pnt->tw_mri_value, " label='Intensity' group=Cursor help='MRI data value at the calcualtor.' ");
     
   //allow to change
-  TwAddSeparator(bar, "Operation.", NULL);
   //  TwAddVarCB(bar, "", TW_TYPE_FLOAT, GuiContainer::set_level, GuiContainer::get_level, NULL, " min=-1 max=150 step=1 label='Isovalue'");
   pnt->tw_cursor_hit = 3;
-  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_cursor_hit, "  min=0 max=150 step=1 label='Hit point' help='Point where the cursor considered to have hit the surface' ");
+  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_cursor_hit, "  min=0 max=150 step=1 label='Depth (by intensity)' group=Cursor help='Point where the cursor considered to have hit the surface' ");
   pnt->tw_cursor_depth = 0;
-  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_cursor_depth, " min=0 max=50 step=1 label='Cursor depth' help='How deep cursor goes after an impact.' ");
-  pnt->tw_mri_value = 666.0;
-  TwAddVarRO(bar, "", TW_TYPE_FLOAT, &pnt->tw_mri_value, " label='ValueAtCursor' help='MRI data value at the calcualtor.' ");
-  TwAddSeparator(bar, "Editing.", NULL);
+  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_cursor_depth, " min=0 max=50 step=1 label='Depth (by distance)' group='Cursor' help='How deep cursor goes after an impact.' ");
+  pnt->tw_mri_value = 0.0;
   //TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
-  TwAddVarRW(bar, "Editing tool", modesType, &pnt->tool, "keyIncr=r keyDecr=t");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=6 step=1 label='Tool size' help='Point size' ");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=1000 step=1 label='Prop. threshold' help='what possible thresholds are avaliable' ");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead.' help='Skip this many voxels in search for suitable areas.' ");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &depth, " min=0 max=256 step=1 label='Depth' help='Go no deeper than this value. 0 means no limit' ");
-  TwAddVarRW(bar, "", TW_TYPE_INT32, &iterations, " min=1 max=400 step=10 label='Iterations.' help='Iterations per button press' ");
-  TwAddVarRW(bar, "Prop. type", propagatorType, &propagator_type, "");
-  TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &(pnt->vol.use_scope), " label='Prefer point of view' ");
-  TwAddButton(bar, "", set_band, NULL, " label='Band' key='b' ");
-  TwAddButton(bar, "", step, NULL, " label='Step' key='g' ");
-  TwAddButton(bar, "", remove_hanging_pieces, NULL, " label='Mark uncnctd.' ");
-  TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' ");
-  TwAddButton(bar, "", reseed, NULL, " label='Reseed' ");
-  TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' ");
-  TwAddButton(bar, "", apply_mask, NULL, " label='Toggle 3D Mask' ");
-  TwAddButton(bar, "", load_file_truth, NULL, " label='Load truth' ");
+  TwAddVarRW(bar, "Mode", modesType, &pnt->tool, " group='Interaction' keyIncr=r keyDecr=t");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=60 step=1 label='Modification area size' group='Interaction' help='Point size' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=1000 step=1 label='Prop. threshold' group='Parameters' help='what possible thresholds are avaliable' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead' group='Parameters' help='Skip this many voxels in search for suitable areas.' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &depth, " min=0 max=256 step=1 label='Depth limit' group='Parameters' help='Go no deeper than this value. 0 means no limit' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &iterations, " min=1 max=400 step=10 label='Step size' help='Iterations per button press' group='Parameters'");
 
-  TwAddSeparator(bar, "File.", NULL);
+  TwDefine("Options/Parameters group=Propagation");
+
+  TwAddVarRW(bar, "Propagation method", propagatorType, &propagator_type, "group='Propagation'");
+  TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &(pnt->vol.use_scope), " label='Prefer point of view' group='Propagation' ");
+  TwAddButton(bar, "", set_band, NULL, " label='Autodetect parameters' key='b' group='Propagation'");
+  TwAddButton(bar, "", step, NULL, " label='Process (a step)' key='g' group='Propagation'");
+  TwAddButton(bar, "", step_all, NULL, " label='Process (all)' key='g' group='Propagation'");
+  TwAddButton(bar, "", remove_hanging_pieces, NULL, " label='Remove unconnected voxels' group='ROI' ");
+  TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' group='Propagation'");
+  TwAddButton(bar, "", reseed, NULL, " label='Reseed' group='ROI' ");
+  TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' group='ROI'");
+  TwAddButton(bar, "", apply_mask, NULL, " label='Toggle Preview' group='ROI' ");
+  TwAddButton(bar, "", load_file_truth, NULL, " label='Load' group='Ground truth' ");
+  TwAddVarRW(bar, "", TW_TYPE_INT32, &radius, " min=1 max=60 step=1 label='Modification radius' group='Ground truth' help='The size of the area where we want to grow the truth' ");
+  TwAddButton(bar, "", grow_truth, NULL, " label='Grow' group='Ground truth'");
+  TwAddButton(bar, "", erode_truth, NULL, " label='Erode' group='Ground truth'");
+  TwAddButton(bar, "", apply_truth, NULL, " label='Process' group='Ground truth'");
+
   ///and now the slice control:
   sl->tiles_coverage(0.25, 1.0);
     
@@ -198,8 +209,11 @@ void GuiContainer::create(){
   TwAddVarCB(bar, "", TW_TYPE_INT32, GuiContainer::set_zoom, GuiContainer::get_zoom, NULL, " min=1 max=5 step=1 label='Zoom' group='2D'");
   TwAddVarCB(bar, "", TW_TYPE_BOOLCPP, GuiContainer::set_mask, GuiContainer::get_mask, NULL, " label='Toggle 2D Mask' key='m' group='2D'");
   TwAddVarCB(bar, "", TW_TYPE_FLOAT, GuiContainer::set_coverage, GuiContainer::get_coverage, NULL, " min=0.25 max=1.0 step=0.03 label='Coverage' group='2D'");
-  TwAddVarCB(bar, "Color scheme", colorsType, GuiContainer::set_scheme, GuiContainer::get_scheme, NULL, " min=0 max=4 step=1 label='Color scheme' ");
-  TwAddButton(bar, "", GuiContainer::switch_crossections, NULL, "label='Switch planes' key='c'");
+  TwAddVarCB(bar, "Color scheme", colorsType, GuiContainer::set_scheme, GuiContainer::get_scheme, NULL, " group=Visualization min=0 max=4 step=1 label='Color scheme' ");
+  TwAddButton(bar, "", GuiContainer::switch_crossections, NULL, "label='Switch planes' key='c' group=2D");
+
+  TwAddButton(bar, "", test_shape, NULL, "group=Testing label='Shape'");
+  TwAddButton(bar, "", test_button, NULL, "group=Testing label='Action'");
 
 
 };
@@ -216,7 +230,7 @@ void TW_CALL GuiContainer::get_level(void * value, void * UserData){
 };
 void TW_CALL GuiContainer::set_level(const void * value, void * UserData){
   the_gui->level = *((float *)value);
-  printf("setting level %f\n", the_gui->level);
+  printf("setting level %f\n", (double)the_gui->level);
   the_gui->pnt->set_level((float)the_gui->level);
 };
 
@@ -229,6 +243,9 @@ void TW_CALL GuiContainer::load_file( void * UserData){
     the_gui->pnt->load(in.c_str());
     the_gui->pnt->find_surface();
   };
+
+  get_active_surfaces()->clear();
+
   the_gui->pnt->update(); //and make sure all is shown up.....
 
 };
@@ -257,7 +274,22 @@ void TW_CALL GuiContainer::test_shape( void * UserData){
   printf("gmwm: %d, adj: %d\n", gmwm, adj);
 };
 
-//**//
+
+//remove half the brain
+int cutted = 10;
+
+void TW_CALL GuiContainer::test_button( void * UserData){
+  printf("Coming up with a surface.\n");
+  int adj = 0;
+  int gmwm = 0;
+  //the_gui->pnt->vol.reset();
+  for(int i = 0; i < 255*255*cutted; i++){
+    the_gui->pnt->vol.vol[i] = 0;
+  };
+  the_gui->pnt->find_surface();
+  printf("gmwm: %d, adj: %d\n", gmwm, adj);
+  cutted+=3;
+};
 
 #include "v3.h"
 #include "stdio.h"
@@ -306,7 +338,6 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
     refine( o1, v2, o2, pnt, n);
     refine( o0, o1, o2, pnt, n);
   }; 
-
   return true;
 };
 
@@ -355,6 +386,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
     center+=in;
     N++;
   };
+
   //ok, now all the correct points in tri.
   //read tris now
   V3f m[3];
@@ -373,7 +405,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
   };
  
   fclose(f);
-  printf("stor size is:%d\n", stor.size());
+  printf("stor size is:%d\n", (int)stor.size());
   printf("%d pixels false positive.\n", dead);
 
   if(_fill){
@@ -398,14 +430,123 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
   
 };
 
-void TW_CALL GuiContainer::load_file_truth( void * UserData){
+void do_grow_truth(FastVolume & v, V3f where, int radius){
+  for(int i = 0; i <3; i++){
+    radius = (where[i]+radius > 255)?255-where[i]:radius;
+    radius = (where[i]-radius < 1)?(where[i]-1):radius;
+    if(radius < 0)radius = 0;
+  };
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(!(v.mask[offset] & (TRU | ZRO | MASK ) )){
+	  //checking neighbours
+	  for(int nbr = 0; nbr < 6; nbr++){
+	    if(v.mask[offset+v.neighbours[nbr]] & TRU)
+	      v.mask[offset] |= AUX;
+	  };
+	};
+      };
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(v.mask[offset] & AUX){
+	  v.mask[offset] -= AUX;
+	  v.mask[offset] |= TRU;
+	};
+      };
+};
 
+void do_erode_truth(FastVolume & v, V3f where, int radius){
+  for(int i = 0; i <3; i++){
+    radius = (where[i]+radius > 255)?255-where[i]:radius;
+    radius = (where[i]-radius < 1)?(where[i]-1):radius;
+    if(radius < 0)radius = 0;
+  };
+
+  int depth = 1000;
+
+  //what is the least deep part
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(v.mask[offset] & TRU){
+	  if(depth > v.depth[offset])depth = v.depth[offset];
+	};
+      };
+  for(int x = where.x-radius; x < where.x+radius; x++)
+    for(int y = where.y-radius; y < where.y+radius; y++)
+      for(int z = where.z-radius; z < where.z+radius; z++){
+	int offset = v.getOffset(x,y,z);
+	if(v.depth[offset] == depth)
+	  v.mask[offset] -= (TRU & v.mask[offset]);
+      };
+};
+
+void TW_CALL GuiContainer::grow_truth( void * UserData){
+  do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
+  the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+};
+
+void TW_CALL GuiContainer::erode_truth( void * UserData){
+  do_erode_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
+  the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+};
+
+void TW_CALL GuiContainer::load_file_truth( void * UserData)
+{
   printf("Trying to load a file.\n");
   std::string in = getFile();
+
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
-    read_voxels(in, the_gui->pnt, false, true, false);
-  };
+    Surface it;
+    read_surface(it, in);
+    printf("Obtained %d vertices, and %d triangles, thanks for asking.\n",
+	   (int)it.n.size(), (int)it.tri.size() );
+    
+    RenderingTraits t = {0, false, true, true};
+    rasterize_surface(it, *the_gui->pnt, t);
+
+    get_active_surfaces()->push_back(it);
+  };  
+};
+
+void do_all_work(GlPoints * pnt){
+  pnt->vol.markers.clear();
+
+  for(int i = pnt->vol.getOffset(1,1,1); i <= pnt->vol.getOffset(255,255,255); i++)
+    {
+      if((pnt->vol.depth[i] < 10) && !(pnt->vol.mask[i] & (TRU | ZRO | MASK))){
+	//if there is a truth nearby, we can mark our pos.
+	for(int nbr = 0; nbr < 6; nbr++){
+	  int cur_nbr = i+pnt->vol.neighbours[nbr];
+	  if(TRU & pnt->vol.mask[cur_nbr]){
+	    //ok, we are interested; there is truth somewhere here;
+	    pnt->vol.markers.push_back(i);
+	    pnt->vol.mask[i] |= MASK;
+	    break;
+	  };
+	};
+      };
+    };
+
+  //ok, got interesting points; now propagating.
+  pnt->vol.propagate(1000, 8, 10, 4);
+  pnt->vol.updated = true;
+  pnt->update(); //and make sure all is shown up.....
+
+}
+
+void TW_CALL GuiContainer::apply_truth( void * UserData)
+{
+  printf("Removing everything close to ground truth.\n");
+  do_all_work(the_gui->pnt);
 };
 
 void TW_CALL GuiContainer::switch_crossections( void * UserData){
@@ -511,6 +652,24 @@ void TW_CALL GuiContainer::step( void * UserData){
   the_gui->pnt->vol.updated = true;
   the_gui->pnt->update(); //and make sure all is shown up.....
 };
+
+///
+/// TODO
+///
+///
+void TW_CALL GuiContainer::step_all( void * UserData){
+  switch(the_gui->propagator_type){
+  case 0: // jump
+    the_gui->pnt->vol.propagate(the_gui->threshold, the_gui->amount, the_gui->depth, 200);
+    break;
+  case 1: //similarity
+    the_gui->pnt->vol.propagate_spread(the_gui->threshold, the_gui->amount, the_gui->depth, 200);
+  };
+  the_gui->pnt->vol.updated = true;
+  the_gui->pnt->update(); //and make sure all is shown up.....
+  
+};
+
 
 void TW_CALL GuiContainer::undo( void *){
   the_gui->pnt->vol.undo();

@@ -7,7 +7,7 @@ Loader::Ex::Ex(std::string why): reason(why){};
 Loader::Ex::Ex(const Ex & to_copy): reason(to_copy.reason){};
 Loader::Ex Loader::Ex::operator=(const Loader::Ex & to_copy){
   reason = to_copy.reason;
-  return *this;
+  return * this;
 };
 
 
@@ -44,7 +44,7 @@ int Loader::read(std::string name){
   
   int cnt = 0;
 
-  while(cnt = gzread(fd, (void *) buf, BUF_SIZE)){
+  while((cnt = gzread(fd, (void *) buf, BUF_SIZE))){
 	contents+=std::string((char *)buf, cnt);
   };
   ::gzclose(fd);  
@@ -57,7 +57,7 @@ int Loader::read(std::string name){
   // further manipulation - storing, writing.
   total = contents.size();
   memcpy((void *)(res), contents.c_str(), contents.size()); 
-  printf("Acqured %d bytes.\n", contents.size());
+  printf("Acqured %d bytes.\n", (int)contents.size());
 
   //getting additional information
   //  get_mgz_info(name);
@@ -193,30 +193,30 @@ void Loader::parse(raw data, FastVolume & result, bool read){
 
   const int MRI_UCHAR   = 0;
   const int MRI_INT     = 1;
-  const int MRI_LONG    = 2;
+  //  const int MRI_LONG    = 2;
   const int MRI_FLOAT   = 3;
   const int MRI_SHORT   = 4;
-  const int MRI_BITMAP  = 5;
+  // const int MRI_BITMAP  = 5;
   const int MRI_TENSOR  = 6;
 
   const int UNUSED_SPACE_SIZE = 256;
   const int USED_SPACE_SIZE   = (3*sizeof(float)+4*3*sizeof(float));
-  const int STRLEN = 256;
+  //const int STRLEN = 256;
 
 
   int pos = 0; //current read position
 
-  int   start_frame, end_frame, width, height, depth, nframes, type, x, y, z,
-    bpv, dof, bytes, version, ival, unused_space_size, good_ras_flag, i ;
-  char   unused_buf[UNUSED_SPACE_SIZE+1] ;
-  float  fval, xsize, ysize, zsize, x_r, x_a, x_s, y_r, y_a, y_s,
+  int   /*start_frame, end_frame,*/ width, height, depth, nframes, type, x, y, z,
+    /*bpv,*/ dof, /*bytes, version, ival,*/ unused_space_size, good_ras_flag, i ;
+  //char   unused_buf[UNUSED_SPACE_SIZE+1] ;
+  float  /*fval,*/ xsize, ysize, zsize, x_r, x_a, x_s, y_r, y_a, y_s,
     z_r, z_a, z_s, c_r, c_a, c_s ;
-  short  sval ;
+  //  short  sval ;
   //  int tag_data_size;
-  char *ext;
-  char command[STRLEN];
+  // char *ext;
+  //char command[STRLEN];
   int nread;
-  int tag;
+  //int tag;
 
   xsize = ysize = zsize = 0;
   x_r = x_a = x_s = 0;
