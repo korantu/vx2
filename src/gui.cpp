@@ -123,7 +123,13 @@ void GuiContainer::create(){
 
   ///create type for colors... well; damnit? stupid.        
   std::vector<std::string> col = color_type();
-  TwEnumVal colorsEV[col.size()];
+#ifndef WIN32
+  const int colors_num = col.size();
+  TwEnumVal colorsEV[colors_num];
+#else //if using msvc, have to mantain a schemes table of a fixed size.
+  TwEnumVal colorsEV[100];	/// (msvc hack here) ///
+//  col.erase(col.begin()+99, col.end());
+#endif
   for(int i = 0 ; i < col.size(); i++){
     const char * ss = col[i].c_str();
     TwEnumVal a = {i, ss};
@@ -301,7 +307,7 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
     refine( o0, o1, o2, pnt, n);
   }; 
 
-  
+  return true;
 };
 
 void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru = false, bool _fill = true){

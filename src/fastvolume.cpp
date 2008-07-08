@@ -1,6 +1,8 @@
 #include "fastvolume.h"
 #include "misc.h"
 
+#include <algorithm>
+
 const int FastVolume::neighbours[26] = {
   dx, -dx, dy, -dy, dz, -dz,
   dx+dy, dx-dy, dy-dx, -dy-dx,

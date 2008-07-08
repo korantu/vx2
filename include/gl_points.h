@@ -4,7 +4,8 @@
 #include "fastvolume.h"
 #include "loader.h"
 #include "v3tools.h"
-#include "glfw.h"  //TODO included only for GLint/GLdouble; try to remove
+#define GLFW_DLL
+#include "GL/glfw.h"  //TODO included only for GLint/GLdouble; try to remove
 
 
 struct GlPoints {

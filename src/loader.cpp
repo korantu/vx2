@@ -7,6 +7,7 @@ Loader::Ex::Ex(std::string why): reason(why){};
 Loader::Ex::Ex(const Ex & to_copy): reason(to_copy.reason){};
 Loader::Ex Loader::Ex::operator=(const Loader::Ex & to_copy){
   reason = to_copy.reason;
+  return *this;
 };
 
 
@@ -285,10 +286,10 @@ void Loader::parse(raw data, FastVolume & result, bool read){
 //	  		if(result.data[j] != 0)printf("<%d:%d>", j, result.data[j]);
  
     
-  for (z = 0 ; z < depth ; z++){
-    for (i = y = 0 ; y < height ; y++)
+  for (z = 0 ; z < depth/2 ; z++){
+    for (i = y = 0 ; y < height/2 ; y++)
       {
-	for (x = 0 ; x < width ; x++, i++)
+	for (x = 0 ; x < width/2 ; x++, i++)
 	  {
 	  	if(read){
 		  switch (type)

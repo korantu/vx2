@@ -1,5 +1,6 @@
 #include "slices.h"
-#include "glfw.h"
+#define GLFW_DLL
+#include "GL/glfw.h"
 #include "color.h"
 
 void slices::free_store(){

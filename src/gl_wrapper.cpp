@@ -1,3 +1,4 @@
+#define GLFW_DLL
 #include "gl_wrapper.h"
 #include <AntTweakBar.h>
 

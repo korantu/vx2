@@ -1,8 +1,10 @@
 #include "gl_points.h"
-#include "glfw.h"
+#define GLFW_DLL
+#include "GL/glfw.h"
 #include "v3.h"
 #include "v3tools.h"
 #include <string>
+#include <algorithm>
 #include "misc.h"
 #include "native.h"
 
@@ -31,7 +33,7 @@ void GlPoints::set_level(float l){
 	  vol.depth[cur_idx] = cur_depth;
 	  list[cur_depth].push_back(cur_idx);
 	  for(int i = 0; i < 6; i++){
-	    scratch.push_back(cur_idx+vol.neighbours[i]); //schedule for lookaround;
+	    scratch.push_back(cur_idx+vol.neighbours[i]); ///schedule for lookaround;
 	  };
 	};
 	
@@ -237,7 +239,7 @@ void GlPoints::draw(V3f zaxis){
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   glDepthMask(GL_FALSE);
 
-  sort(list[cur_level].begin(), list[cur_level].end(), psortable(zaxis));
+  std::sort(list[cur_level].begin(), list[cur_level].end(), psortable(zaxis));
 
   int r,g,b;
 

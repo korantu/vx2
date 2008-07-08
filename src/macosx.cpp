@@ -1,4 +1,4 @@
-#include <Carbon/Carbon.h>
+//#include <Carbon/Carbon.h>
 #include <string.h>
 #include <string>
 
@@ -6,7 +6,7 @@ enum dialog_type {
   DO_LOAD, DO_SAVE
 };
 
-
+/*
 std::string GetOpenFileFromUser(dialog_type d_type)
 {
   NavDialogCreationOptions dialogOptions;
@@ -94,4 +94,15 @@ std::string getFile(){
 std::string putFile(){
   return GetOpenFileFromUser(DO_SAVE);
 };
+*/
+
+//stubs
+std::string getFile(){
+  return "";
+};
+
+std::string putFile(){
+  return "";
+};
+
 

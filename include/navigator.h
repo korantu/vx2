@@ -1,7 +1,8 @@
 #ifndef __navigator_h__
 #define __navigator_h__
 
-#include "glfw.h"
+#define GLFW_DLL
+#include "GL/glfw.h"
 
 ///mouse delta can be replaced by simple x/y struct; no need to accumulate anything;
 

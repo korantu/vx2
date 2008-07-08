@@ -3,7 +3,8 @@
 #include <string.h>
 #include <vector>
 #include "v3.h"
-#include <glfw.h>
+#define GLFW_DLL
+#include "GL/glfw.h"
 
 #include "clut.h"
 
@@ -120,6 +121,7 @@ ColorEntry::ColorEntry(const char * _name, const ColorMapper & _map){
 ColorEntry & ColorEntry::operator=(const ColorEntry & in){
   name = in.name;
   map = in.map;
+  return *this;
 };
 
 ColorEntry::ColorEntry(const ColorEntry & in){
