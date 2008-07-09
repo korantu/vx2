@@ -286,10 +286,10 @@ void Loader::parse(raw data, FastVolume & result, bool read){
 //	  		if(result.data[j] != 0)printf("<%d:%d>", j, result.data[j]);
  
     
-  for (z = 0 ; z < depth/2 ; z++){
-    for (i = y = 0 ; y < height/2 ; y++)
+  for (z = 0 ; z < depth ; z++){
+    for (i = y = 0 ; y < height ; y++)
       {
-	for (x = 0 ; x < width/2 ; x++, i++)
+	for (x = 0 ; x < width ; x++, i++)
 	  {
 	  	if(read){
 		  switch (type)

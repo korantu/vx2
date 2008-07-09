@@ -84,6 +84,7 @@ class FastVolume {
   static const int neighbours[26];// = {dx, -dx, dy, -dy, dz, -dz};
 
   /* Calculate offset from separate coords */
+
   static inline int getOffset(int x, int y, int z){
     return x+(y<<8)+(z<<16);
   };
