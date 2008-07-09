@@ -137,7 +137,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib zdll.lib glu32.lib glfwdll.lib kernel32.lib AntTweakBar.lib  $(NoInherit)"
+				AdditionalDependencies="opengl32.lib zdll.lib glu32.lib glfwdll.lib comdlg32.lib kernel32.lib AntTweakBar.lib  $(NoInherit)"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(SolutionDir)../../deps/zlib123-dll/lib;$(SolutionDir)../../deps/atb-bin/lib;$(SolutionDir)../../deps/glfw-bin/lib-msvc"
 				GenerateDebugInformation="true"
