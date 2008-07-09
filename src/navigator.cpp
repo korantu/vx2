@@ -9,8 +9,8 @@ camera::camera() {
 
 ///Move the camera by dx/dy
 camera & move(camera & to_move, int dx, int dy){
-  float fdx = 0.01*dx; //inital values; scaled
-  float fdy = 0.01*dy;
+  float fdx = 0.01f*dx; //inital values; scaled
+  float fdy = 0.01f*dy;
 
   to_move.eye = to_move.eye + to_move.up*fdy;
   
@@ -47,9 +47,9 @@ V3f GetOGLPos(int x, int y, int z)
   GLint viewport[4];
   GLdouble modelview[16];
   GLdouble projection[16];
-   GLfloat winX = x;
-   GLfloat winY = y;
-   GLfloat winZ = z;
+   GLfloat winX = (float)x;
+   GLfloat winY = (float)y;
+   GLfloat winZ = (float)z;
   GLdouble posX, posY, posZ;
 
   glGetDoublev( GL_MODELVIEW_MATRIX, modelview );

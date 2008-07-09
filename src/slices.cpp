@@ -22,8 +22,8 @@ slices::slice::slice(){
 
 void slices::tiles_coverage(float _ax, float _ay){
   area_x = _ax; area_y  = _ay;
-  xn_toshow = xn*_ax;
-  yn_toshow = yn*_ay;
+  xn_toshow = (int)(xn*_ax);
+  yn_toshow = (int)(yn*_ay);
   if(0 == xn_toshow)xn_toshow = 1;
   if(0 == yn_toshow)yn_toshow = 1;
 
@@ -53,9 +53,9 @@ bool slices::pick(int x, int _y, V3f & res){
 
 bool slices::locate(V3f pos, int &x, int &y){
   V3f dr; dr = pos - center;
-  int idx = dr.dot(dx)/dx.length2();
-  int idy = dr.dot(dy)/dy.length2();
-  int idz = dr.dot(dz)/dz.length2();
+  int idx = (int)(dr.dot(dx)/dx.length2());
+  int idy = (int)(dr.dot(dy)/dy.length2());
+  int idz = (int)(dr.dot(dz)/dz.length2());
   if(ABS(idx)*zoom > tile_w/2)return false;
   if(ABS(idy)*zoom > tile_h/2)return false;
   if(ABS(idz) > xn_toshow*yn_toshow/2)return false;
@@ -203,12 +203,12 @@ void slices::setup_projection(){
 void slices::update(FastVolume & in, V3f _center = V3f(-1,-1,-1))//, V3f _dx, V3f _dy, V3f _dz){
 {
   //ok, setting minimum und maximum
-  in.min_x = _center.x - 40;
-  in.max_x = _center.x + 40;
-  in.min_y = _center.y - 40;
-  in.max_y = _center.y + 40;
-  in.min_z = _center.z - 40;
-  in.max_z = _center.z + 40;
+  in.min_x = (int)(_center.x - 40);
+  in.max_x = (int)(_center.x + 40);
+  in.min_y = (int)(_center.y - 40);
+  in.max_y = (int)(_center.y + 40);
+  in.min_z = (int)(_center.z - 40);
+  in.max_z = (int)(_center.z + 40);
   //and center
   if(_center.x > 0)in.center = _center;
 

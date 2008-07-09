@@ -10,7 +10,7 @@
 
 struct GlPoints {
 
-GlPoints(): tool(0),  tw_transparency(0.35),  cursor(128,128,128), cur_level(1) {
+GlPoints(): tool(0),  tw_transparency(0.35f),  cursor(128.0f,128.0f,128.0f), cur_level(1) {
   tool = 0;
   tool_size=1;
   };

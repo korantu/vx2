@@ -25,7 +25,7 @@ class FastVolume {
    
   struct t_tr{
     int width, height, depth;
-    int c_r, c_a, c_s;
+    float c_r, c_a, c_s;
   }tr;
 
   bool updated;

@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="$(SolutionDir)../../include;$(SolutionDir)../../deps/glfw-bin/include;$(SolutionDir)../../deps/atb-bin/include/GL;$(SolutionDir)../../deps/atb-bin/include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
@@ -119,7 +119,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="$(SolutionDir)../../include;$(SolutionDir)../../deps/glfw-bin/include;$(SolutionDir)../../deps/atb-bin/include/GL;$(SolutionDir)../../deps/atb-bin/include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -141,7 +141,7 @@
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(SolutionDir)../../deps/zlib123-dll/lib;$(SolutionDir)../../deps/atb-bin/lib;$(SolutionDir)../../deps/glfw-bin/lib-msvc"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -181,10 +181,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\src\clut.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\color.cpp"
 				>
 			</File>
@@ -221,6 +217,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\surface.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\surface.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\v3tools.cpp"
 				>
 			</File>
@@ -235,7 +239,63 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\..\src\clut.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\color.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\environment.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\fastvolume.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\gl_points.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\gl_wrapper.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\gui.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\loader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\misc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\native.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\navigator.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\slices.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\v3.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\v3tools.h"
 				>
 			</File>
 		</Filter>

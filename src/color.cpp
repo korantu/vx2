@@ -73,9 +73,9 @@ void ColorMapper::fill( int end, V3f to){
   V3f cur(from);
 
   for(int i = start; i < end; i++){
-    col[i*3] = cur.x;
-    col[i*3+1] = cur.y;
-    col[i*3+2] = cur.z;
+    col[i*3] = (unsigned char)cur.x;
+    col[i*3+1] = (unsigned char)cur.y;
+    col[i*3+2] = (unsigned char)cur.z;
     cur += dc;
   };
 

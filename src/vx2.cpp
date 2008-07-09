@@ -19,6 +19,11 @@
 //	---------------------------------------------------------------------------
 
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #ifdef USE_TW
 #endif // USE_TW
 
@@ -180,10 +185,10 @@ struct main_module : public gl_wrapper_reciever {
    
       if(st.width>st.height){
 	glOrtho((-(float)st.width/(float)st.height), ((float)st.width/(float)st.height), -1, 1, -2, 2);
-	volume.point_size(1.5*((float)st.height)/(float)256);
+	volume.point_size(1.5f*((float)st.height)/(float)256);
       }else{
 	glOrtho(-1, 1, (-(float)st.height/(float)st.width), ((float)st.height/(float)st.width), -2, 2);
-	volume.point_size(1.5*((float)st.width)/(float)256);
+	volume.point_size(1.5f*((float)st.width)/(float)256);
 	  };
 
  
@@ -565,9 +570,8 @@ int main(int argc, char ** argv)
 
 /// windows
 
-//#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
+#ifdef WIN32
 /* A dummy win function */
 int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance, LPSTR    lpCmdLine, int       nCmdShow){
 	int argc = 1;
@@ -579,3 +583,4 @@ int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance, LPSTR    lpCmd
 	return 0;
 
 };
+#endif

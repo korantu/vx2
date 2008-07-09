@@ -139,13 +139,13 @@ void GuiContainer::create(){
   TwEnumVal colorsEV[100];	/// (msvc hack here) ///
 //  col.erase(col.begin()+99, col.end());
 #endif
-  for(int i = 0 ; i < col.size(); i++){
+  for(size_t i = 0 ; i < col.size(); i++){
     const char * ss = col[i].c_str();
-    TwEnumVal a = {i, ss};
+    TwEnumVal a = {(int)i, ss};
     //  a.Label[0]=col[i].c_str()[0];
     colorsEV[i] = a;
   };
-  TwType colorsType = TwDefineEnum("ColorType", colorsEV, col.size());
+  TwType colorsType = TwDefineEnum("ColorType", colorsEV, (unsigned int)col.size());
 
   ///building bars is a different business..
   
@@ -229,7 +229,7 @@ void TW_CALL GuiContainer::get_level(void * value, void * UserData){
   (*((float *)value))=(float)(the_gui->level);
 };
 void TW_CALL GuiContainer::set_level(const void * value, void * UserData){
-  the_gui->level = *((float *)value);
+  the_gui->level = (int)(*((float *)value));
   printf("setting level %f\n", (double)the_gui->level);
   the_gui->pnt->set_level((float)the_gui->level);
 };
@@ -259,7 +259,7 @@ void TW_CALL GuiContainer::test_shape( void * UserData){
   for(int x = -60; x< 60; x++)
     for(int y = -60; y< 60; y++)
       for(int z = -60; z< 60; z++){
-	int dist = 60-sqrtf(x*x+y*y+z*z);
+	int dist = (int)(60.0-sqrtf((float)(x*x+y*y+z*z)));
 	if(dist < 0 && dist >= -5)adj++; 
 	if(dist < 0 || !((x+50)%80))dist=0;
 	if(dist>0){
@@ -310,12 +310,12 @@ bool refine(V3f & v0, V3f & v1, V3f & v2, GlPoints * pnt, V3f n){
 	      (vtx&4)?ceil(v[i].z):floor(v[i].z));
     */
     
-    V3f vec((int)v[i].x, (int)v[i].y, (int)v[i].z);
+    V3f vec(v[i].x, v[i].y, v[i].z);
       V3f dir = vec-v[i];
       good = (dir.dot(n)<0);
       if(!half)good = true;
 
-      int cur = pnt->vol.getOffset(floor(v[i].x), floor(v[i].y), floor(v[i].z));
+      int cur = pnt->vol.getOffset((int)floor(v[i].x), (int)floor(v[i].y), (int)floor(v[i].z));
       if(!(pnt->vol.mask[cur] & TRU)){
 	pnt->vol.mask[cur] |= TRU;
 	if(good)pnt->vol.mask[cur] |= (tru?TRU:MSK);
@@ -412,7 +412,7 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
   printf("Trying to fill it\n");
    center /= N; //this is the average;
    printf("The seed is %f %f %f; %d in total;  so what? \n", center.x, center.y, center.z, N);
-   int cur = pnt->vol.getOffset(center.x, center.y, center.z);
+   int cur = pnt->vol.getOffset((int)center.x, (int)center.y, (int)center.z);
    pnt->vol.mask[cur] |= BDR;
    pnt->vol.markers.push_back(cur);
   
@@ -432,13 +432,13 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
 
 void do_grow_truth(FastVolume & v, V3f where, int radius){
   for(int i = 0; i <3; i++){
-    radius = (where[i]+radius > 255)?255-where[i]:radius;
-    radius = (where[i]-radius < 1)?(where[i]-1):radius;
+    radius = (where[i]+radius > 255)?255-(int)(where[i]):radius;
+    radius = (where[i]-radius < 1)?((int)where[i]-1):radius;
     if(radius < 0)radius = 0;
   };
-  for(int x = where.x-radius; x < where.x+radius; x++)
-    for(int y = where.y-radius; y < where.y+radius; y++)
-      for(int z = where.z-radius; z < where.z+radius; z++){
+  for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
+    for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
+      for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
 	if(!(v.mask[offset] & (TRU | ZRO | MASK ) )){
 	  //checking neighbours
@@ -448,9 +448,9 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 	  };
 	};
       };
-  for(int x = where.x-radius; x < where.x+radius; x++)
-    for(int y = where.y-radius; y < where.y+radius; y++)
-      for(int z = where.z-radius; z < where.z+radius; z++){
+  for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
+    for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
+      for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
 	if(v.mask[offset] & AUX){
 	  v.mask[offset] -= AUX;
@@ -461,25 +461,25 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 
 void do_erode_truth(FastVolume & v, V3f where, int radius){
   for(int i = 0; i <3; i++){
-    radius = (where[i]+radius > 255)?255-where[i]:radius;
-    radius = (where[i]-radius < 1)?(where[i]-1):radius;
+    radius = (where[i]+radius > 255)?255-(int)where[i]:radius;
+    radius = (where[i]-radius < 1)?((int)where[i]-1):radius;
     if(radius < 0)radius = 0;
   };
 
   int depth = 1000;
 
   //what is the least deep part
-  for(int x = where.x-radius; x < where.x+radius; x++)
-    for(int y = where.y-radius; y < where.y+radius; y++)
-      for(int z = where.z-radius; z < where.z+radius; z++){
+  for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
+    for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
+      for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
 	if(v.mask[offset] & TRU){
 	  if(depth > v.depth[offset])depth = v.depth[offset];
 	};
       };
-  for(int x = where.x-radius; x < where.x+radius; x++)
-    for(int y = where.y-radius; y < where.y+radius; y++)
-      for(int z = where.z-radius; z < where.z+radius; z++){
+  for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
+    for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
+      for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
 	if(v.depth[offset] == depth)
 	  v.mask[offset] -= (TRU & v.mask[offset]);

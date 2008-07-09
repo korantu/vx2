@@ -456,10 +456,18 @@ struct step{
   int to;
   float score;
 
-  bool operator() (const step & me, const step & other){
-    return(me.score < other.score);
+  bool operator() (const step & me, const step & other) const {
+    return me < other;
   };
+
+  bool operator< (const step & other) const{
+    return(score < other.score);
+  };
+
+  
 };
+
+
 
 float smooth_bell(float x){
   if(x<0)x=-x;
@@ -484,7 +492,7 @@ void FastVolume::set_band(){
 
 	half_band_size = (float)(max-min)/2.0f;
 	//add margins
-	half_band_size = half_band_size*1.2;
+	half_band_size = half_band_size*1.2f;
 	band_center = (float)(max+min)/2;
 	// go around same points and plan the move
 	printf("band: half:%f, center:%f\n",  half_band_size, band_center);
@@ -547,19 +555,19 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
     for(std::vector<step>::iterator i = steps.begin(); i != steps.end(); i++){
       step the_step = *i;
       float diff = 1;
-      float delta =  ABS(vol[the_step.to]-vol[the_step.from]);
+      float delta =  (float)ABS(vol[the_step.to]-vol[the_step.from]);
       float in_band = smooth_bell((vol[the_step.to]-threshold)/half_band_size);
       float friends=0;
       for(int k = 0; k < 26; k++){
 	if(mask[the_step.to+neighbours[k]] & MASK)friends+=1;
       };
       
-      friends=friends/27.0; //smooth_bell(friends-9.0/30)*smooth_bell((friends-9.0)/30);
+      friends=friends/27.0f; //smooth_bell(friends-9.0/30)*smooth_bell((friends-9.0)/30);
 
       //depth factor
-      float f_depth = 0.1;
+      float f_depth = 0.1f;
       if(max_depth < 10){
-	f_depth=1.0-0.1*depth[the_step.to]; //do not consider 
+	f_depth=1.0f-0.1f*depth[the_step.to]; //do not consider 
       }else{
 	f_depth = 1.0;
       };                                              //depth too deep...
@@ -567,7 +575,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
       int x, y, z;
       getCoords(the_step.to, x, y, z);
-      V3f cur(x,y,z);
+      V3f cur((float)x,(float)y,(float)z);
       //distance; [1-0], 1 - closest, 0 - furtherst
       float distance = smooth_bell((center-cur).length()/50);  
       if(!use_scope)distance = 1.0;
@@ -577,25 +585,12 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do_internals || (is_border(vol,dest))?1:0);
 
 
-      if(diff > max)max = diff;
-      if(diff < min)min = diff;
+      if(diff > max)max = (int)diff;
+      if(diff < min)min = (int)diff;
     };
 
-    //1. ideally, we should have selected best scores here;
-    //but - we do not; we suck and just use some fixed number for now.
-    // THAT'LL SHOW 'EM!
-
-    //2. Ok... fixed value just didnot worked.
-    // let us take ... maximum and minimum and
-    // then use something inbetween.
-    // (really-really dun wan to sort)  
-
-    //ok, got scores too... let us propagate scores for fun
-    //int thr = min + ((max-min) / 4);
-
     //3. Well... seems like sorting _is_ importand;
-    step tmp;
-    std::sort(steps.begin(), steps.end(), tmp);
+    std::sort(steps.begin(), steps.end());
     //thr = steps[steps.size() * 0.9]
 
     int cnt = 0;
