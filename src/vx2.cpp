@@ -24,9 +24,6 @@
 #include <windows.h>
 #endif
 
-#ifdef USE_TW
-#endif // USE_TW
-
 #define GLFW_DLL
 
 #include "GL/glfw.h"
