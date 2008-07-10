@@ -5,7 +5,7 @@
   This file defines structures for color mapping;
 */
 
-#include "V3.h"
+#include "v3.h"
 #include <vector>
 #include <string>
 

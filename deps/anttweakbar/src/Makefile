@@ -68,7 +68,7 @@ all: 	Makefile $(TARGET)
 
 $(TARGET): $(OBJS)
 	@echo "===== Link $@ ====="
-	$(AR) libant.a $(OBJS)
+	$(AR) libant.a libssp.a $(OBJS)
 #	$(LINK) $(LFLAGS) -o $(OUT_DIR)/lib$(TARGET).lib $(OBJS) $(LIBS)
 #	$(LINK) $(LFLAGS) -shared -Wl,-soname,lib$(TARGET)$(SO_EXT) $(OBJS) $(LIBS)
 
