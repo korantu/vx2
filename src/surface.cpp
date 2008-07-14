@@ -1,20 +1,11 @@
 /**
-A file for manipulation with surfaces;
+A file for surface manipulation;
 //loading
 //generating from voxels
 //rendering
  */
 
 #include "surface.h"
-
-/*RenderingTraits::RenderingTraits():dead(0),
-				   half(false), 
-				   inside(true), 
-				   tru(false)
-{
-  //nothing here
-};
-*/
 
 vector<Surface> __surfaces;
 
@@ -28,18 +19,23 @@ bool read_surface(Surface & surf, std::string name){
   int tris;       //for the number of triangles
   char buf[1000]; //for filename
 
+  
   FILE * f = fopen(name.c_str(), "ro");
+  
+  try {
+
   if(f == NULL){
     printf("Cannot open surface file;\n");
     return false;
   };
 
   fgets( buf, 1000, f); //first line, don't care
+  if(feof(f)) throw "eof";
   fscanf(f, "%d %d\n", &points, &tris);
+  if(feof(f)) throw "eof";
   printf("Sanity checking\n");
   if(points < 0 || tris < 0)return false;
-  //640k should be enough for everyone.
-  if(points > 1000000 || tris > 1000000) return false; 
+ 
 
   printf("%d pints, %d triangles, what gives?", points, tris);
 
@@ -48,27 +44,21 @@ bool read_surface(Surface & surf, std::string name){
     V3f in;
     int dummy;
     fscanf(f, "%f  %f  %f  %d\n", &in.x, &in.y, &in.z, &dummy);
+    if(feof(f)) throw "eof";
     in = V3f(-in.x, -in.z, +in.y);
     in+=V3f(128, 128, 128);
     surf.v.push_back(in);
     surf.n.push_back(V3f(0,0,0));
   };
-  //Lame; just in case;
-    surf.n.push_back(V3f(0,0,0));
-    surf.n.push_back(V3f(0,0,0));
-    surf.n.push_back(V3f(0,0,0));
 
   for(int i = 0; i < tris; i++){
     int a, b, c, zero; 
     a = 0;
     b = 0;
     c = 0;
-    //int m[3];
-    //char buf[1000];
-    //fscanf(f, "%s\n", buf);
     fscanf(f, "%d %d %d %d\n", &a, &b, &c, &zero);
-    //Life sucks...and the answer is in fact 43.
-    surf.tri.push_back(V3i(a,b,c));
+    if(feof(f)) throw "eof";
+  surf.tri.push_back(V3i(a,b,c));
     if(i < 3)printf("((%d %d %d))\n", a, b, c);
   
     V3f n; n.cross(surf.v[b]-surf.v[a], surf.v[c]-surf.v[a]);
@@ -78,7 +68,11 @@ bool read_surface(Surface & surf, std::string name){
     surf.n[b] = surf.n[b] + n; 
     surf.n[c] = surf.n[c] + n; 
   };
- 
+
+  }catch(const char *){
+    printf("Problem reading surface.\n");
+  };
+
   fclose(f);
 
   for(unsigned int i = 0; i < surf.n.size(); i++){
@@ -170,6 +164,8 @@ void rasterize_surface(Surface & surf,
   V3f center;
   //V3f m[3];
   //  std::vector<int> tristor; //triangle storage
+
+  if(surf.v.size() > 3)return; ///not enough triangles
 
   //loop trough every triangle and refine it.
   for(vector<V3i>::const_iterator i = surf.tri.begin(); 
