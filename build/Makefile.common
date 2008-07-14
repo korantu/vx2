@@ -32,7 +32,7 @@ deps: $(VX2_SRC) vx2.cpp
 
 #vx2 main build taret.
 vx2: $(VX2) tags
-	$(CXX) $(VX2) vx2.o $(LINKFLAGS) -o vx
+	$(CXX) $(VX2) vx2.o $(LINKFLAGS) -o vx2
 
 t: $(VX2) t.o tags
 	$(CXX) $(VX2) t.o $(LINKFLAGS) -o t

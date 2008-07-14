@@ -508,6 +508,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
   std::vector<step> steps;
 
+
   if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
 
   //iterations
@@ -544,19 +545,28 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
     //now we got all the options, let's rank them
 
-    int max = 0;
-    int min = 100000;
+    float max = 0;
+    float min = 100000;
+  float worst_score = 0.0f; 
     
 
     /// probability of each particular voxel being good,
     /// according to certain criteria.
     /// the higher probability the more chances we'll go in that direction
 
+  ///estimate axuilary parameters
+  
+  int max_delta = 0;
     for(std::vector<step>::iterator i = steps.begin(); i != steps.end(); i++){
       step the_step = *i;
-      float diff = 1;
       float delta =  (float)ABS(vol[the_step.to]-vol[the_step.from]);
-      float in_band = smooth_bell((vol[the_step.to]-threshold)/half_band_size);
+      if(delta > max_delta)max_delta = delta;
+    };
+
+    for(std::vector<step>::iterator i = steps.begin(); i != steps.end(); i++){
+      step the_step = *i;
+      float delta =  (float)ABS(vol[the_step.to]-vol[the_step.from]);
+      float in_band = smooth_bell((vol[the_step.to]-band_center)/half_band_size);
       float friends=0;
       for(int k = 0; k < 26; k++){
 	if(mask[the_step.to+neighbours[k]] & MASK)friends+=1;
@@ -584,13 +594,17 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       //magick formula from voxelbrain version 1.
       //      (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do_internals || (is_border(vol,dest))?1:0);
 
-
-      //    (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do
+      
+      delta = ((max_delta - delta)/max_delta);
+      delta *= delta;
+      delta *= delta;
+      (*i).score = delta*in_band;// (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do
       
       //let's experiment with penalties; and control them.
-      (*i).score = 10.0*(delta/1000.0f)+100.0*(1.0f-in_band)+5.0*(1.0f-friends);//
-      if(diff > max)max = (int)diff;
-      if(diff < min)min = (int)diff;
+      //(*i).score = (1.0f-in_band);//
+      if((*i).score > worst_score)worst_score=(*i).score;
+      if((*i).score > max)max = (*i).score;
+      if((*i).score < min)min = (*i).score;
     };
 
     //3. Well... seems like sorting _is_ importand;
@@ -599,12 +613,17 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
     int cnt = 0;
 
+    //everyone below the limit pass. 
+    float current_limit = max-(max-min)*0.1;
+
+    printf("Current limit is %f \n", current_limit);
+
     for(std::vector<step>::iterator i = steps.begin(); i != steps.end(); i++){
       cnt++;
       bool go = cnt > (steps.size()*0.9);
       if(steps.size() < 10)go=cnt > ((steps.size()*0.5));
       if(steps.size() == 1)go=true;
-      if(steps.size() > 100)go=(unsigned int)cnt>(steps.size()-10);
+      if(steps.size() > 100)go=(bool)((*i).score > current_limit);
       int interesting = (go)?(i->to):(i->from);
       //now, use that interesting point and add it to be active,
       //if it is still not
