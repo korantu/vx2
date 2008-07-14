@@ -53,10 +53,19 @@ bool read_surface(Surface & surf, std::string name){
     surf.v.push_back(in);
     surf.n.push_back(V3f(0,0,0));
   };
+  //Lame; just in case;
+    surf.n.push_back(V3f(0,0,0));
+    surf.n.push_back(V3f(0,0,0));
+    surf.n.push_back(V3f(0,0,0));
 
   for(int i = 0; i < tris; i++){
     int a, b, c, zero; 
+    a = 0;
+    b = 0;
+    c = 0;
     //int m[3];
+    //char buf[1000];
+    //fscanf(f, "%s\n", buf);
     fscanf(f, "%d %d %d %d\n", &a, &b, &c, &zero);
     //Life sucks...and the answer is in fact 43.
     surf.tri.push_back(V3i(a,b,c));

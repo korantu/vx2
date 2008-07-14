@@ -1,23 +1,3 @@
-//	---------------------------------------------------------------------------
-//
-//	@file		TwSimpleGLFW.c
-//	@brief		A simple example that uses AntTweakBar with 
-//				OpenGL and the GLFW windowing system.
-//
-//				AntTweakBar: http://www.antisphere.com/Wiki/tools:anttweakbar
-//				OpenGL:		 http://www.opengl.org
-//				GLFW:		 http://glfw.sourceforge.net
-//	
-//	@author		Philippe Decaudin - http://www.antisphere.com
-//	@date		2006/05/20
-//
-//	note:		TAB=4
-//
-//	Compilation:
-//	http://www.antisphere.com/Wiki/tools:anttweakbar:examples#twsimpleglfw
-//      (a change)
-//	---------------------------------------------------------------------------
-
 
 #ifdef USE_TW
 #endif // USE_TW
