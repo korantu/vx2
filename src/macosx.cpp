@@ -1,4 +1,4 @@
-#include <Carbon/Carbon.h>
+//#include <Carbon/Carbon.h>
 #include <string.h>
 #include <string>
 
@@ -6,7 +6,7 @@ enum dialog_type {
   DO_LOAD, DO_SAVE
 };
 
-
+#ifdef MACOSX
 std::string GetOpenFileFromUser(dialog_type d_type)
 {
   NavDialogCreationOptions dialogOptions;
@@ -94,4 +94,59 @@ std::string getFile(){
 std::string putFile(){
   return GetOpenFileFromUser(DO_SAVE);
 };
+#endif //MACOSX
+
+#ifdef WIN32
+
+#ifdef UNICODE
+#undef UNICODE
+#endif
+//#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <string>
+
+std::string FileDialog(bool do_save){
+OPENFILENAME ofn;
+    char szFileName[MAX_PATH] = "";
+
+    memset(&ofn, 0, sizeof(ofn));
+
+    ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFilter = "FreeSurfer volumes (*.mgz)\0*.mgz\0FreeSurfer surfaces (*.pial.asc)\0*.asc\0";
+    ofn.lpstrFile = szFileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+    ofn.lpstrDefExt = "mgz";
+
+	std::string res = "";
+	if(do_save?GetOpenFileName(&ofn):GetOpenFileName(&ofn))
+    {
+        // Do something usefull with the filename stored in szFileName 
+	    res = ofn.lpstrFile;
+	}
+	return res;
+};
+
+
+std::string getFile(){
+	return FileDialog(false);
+};
+
+std::string putFile(){
+	return FileDialog(true);
+};
+#endif //WIN32
+
+#ifdef LINUX
+//stubs
+std::string getFile(){
+  return "";
+};
+
+std::string putFile(){
+  return "";
+};
+
+#endif
 

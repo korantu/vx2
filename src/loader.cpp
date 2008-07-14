@@ -38,7 +38,7 @@ int Loader::read(std::string name){
   
   std::string contents; //vector of strings, to be composed later into one vec.
 
-  fd = gzopen(name.c_str(),"ro");
+  fd = gzopen(name.c_str(),"rb");
   if(fd == NULL) throw Ex("Cannot open file"); //cannot read file.
   
   
@@ -55,14 +55,14 @@ int Loader::read(std::string name){
   
   //copying the collection into the buffer; the buffer will be used for 
   // further manipulation - storing, writing.
-  total = contents.size();
+  total = (int)contents.size();
   memcpy((void *)(res), contents.c_str(), contents.size()); 
   printf("Acqured %d bytes.\n", (int)contents.size());
 
   //getting additional information
   //  get_mgz_info(name);
 
-  return contents.size();  
+  return (int)contents.size();  
 };
 
 int Loader::write(std::string name){
@@ -308,7 +308,7 @@ void Loader::parse(raw data, FastVolume & result, bool read){
 		    case MRI_INT: set_int(data, cur_data, pos); break;
 		    case MRI_SHORT: set_short(data, cur_data, pos); break;
 		    case MRI_UCHAR: set_char(data, cur_data, pos); break;
-		    case MRI_FLOAT: set_float(data, cur_data, pos); break;
+		    case MRI_FLOAT: set_float(data, (float)cur_data, pos); break;
 		    case MRI_TENSOR: throw "Unable to read tensors";
 		    };
 	  	};

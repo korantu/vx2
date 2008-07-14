@@ -3,7 +3,8 @@
 #include <string.h>
 #include <vector>
 #include "v3.h"
-#include <glfw.h>
+#define GLFW_DLL
+#include "GL/glfw.h"
 
 #include "clut.h"
 
@@ -72,9 +73,9 @@ void ColorMapper::fill( int end, V3f to){
   V3f cur(from);
 
   for(int i = start; i < end; i++){
-    col[i*3] = cur.x;
-    col[i*3+1] = cur.y;
-    col[i*3+2] = cur.z;
+    col[i*3] = (unsigned char)cur.x;
+    col[i*3+1] = (unsigned char)cur.y;
+    col[i*3+2] = (unsigned char)cur.z;
     cur += dc;
   };
 
@@ -120,7 +121,7 @@ ColorEntry::ColorEntry(const char * _name, const ColorMapper & _map){
 ColorEntry & ColorEntry::operator=(const ColorEntry & in){
   name = in.name;
   map = in.map;
-  return * this;
+  return *this;
 };
 
 ColorEntry::ColorEntry(const ColorEntry & in){

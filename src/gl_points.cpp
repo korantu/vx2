@@ -1,8 +1,10 @@
 #include "gl_points.h"
-#include "glfw.h"
+#define GLFW_DLL
+#include "GL/glfw.h"
 #include "v3.h"
 #include "v3tools.h"
 #include <string>
+#include <algorithm>
 #include "misc.h"
 #include "native.h"
 #include "surface.h"
@@ -31,7 +33,7 @@ void GlPoints::set_level(float l){
 	  vol.depth[cur_idx] = cur_depth;
 	  list[cur_depth].push_back(cur_idx);
 	  for(int i = 0; i < 6; i++){
-	    scratch.push_back(cur_idx+vol.neighbours[i]); //schedule for lookaround;
+	    scratch.push_back(cur_idx+vol.neighbours[i]); ///schedule for lookaround;
 	  };
 	};
 	
@@ -224,7 +226,7 @@ void GlPoints::draw(V3f zaxis){
   //else
   float nicety_coefficient = 1.5;
 
-  glPointSize(nicety_coefficient*tw_pnt*pnt);
+  glPointSize((float)(nicety_coefficient*tw_pnt*pnt));
 
 
   int x, y, z;
@@ -232,7 +234,7 @@ void GlPoints::draw(V3f zaxis){
 
   //rendering active area first
   int cur_depth;
-  glPointSize(nicety_coefficient*1.0*pnt);
+  glPointSize((float)(nicety_coefficient*1.0f*pnt));
   glBegin(GL_POINTS);
 
   //markers
@@ -241,7 +243,7 @@ void GlPoints::draw(V3f zaxis){
     if(cur_depth < 2)continue; //do not show top layer
      vol.getCoords(*i, x,y,z);
      //float pnt_col =  vol.vol[*i]/300.0;
-     glColor3f((float)cur_depth*20.0/200, 0, (200.0-cur_depth*20.0)/200.0);
+     glColor3f(cur_depth*20.0f/200.0f, 0.0f, ((200.0f-cur_depth*20.0f)/200.0f));
      glVertex3i(x,y,z);
   };
 
@@ -251,7 +253,7 @@ void GlPoints::draw(V3f zaxis){
     if(cur_depth < 2)continue; //do not show top layer
      vol.getCoords(*i, x,y,z);
      //float pnt_col =  vol.vol[*i]/300.0;
-     glColor3f((float)cur_depth*20.0/200, (200.0-cur_depth*20.0)/200.0, 0);
+     glColor3f(cur_depth*20.0f/200.0f, (200.0f-cur_depth*20.0f)/200.0f, 0.0f);
      glVertex3i(x,y,z);
   };
 
@@ -295,13 +297,13 @@ void GlPoints::draw(V3f zaxis){
 	float a = zaxis.dot(surf->n[idx]);
 	a = a*a*a*a;
 	//a *=;
-	if(a < 0.3)a=0.3;
+	if(a < 0.3)a=0.3f;
 	//float transparency = smooth_bell((surf->v[idx][2]-125)/5);
 	//transparency *= transparency;
 	//transparency *= transparency;
-	//	glColor4f(a/4,a/3,a*1.5, 0.1+transparency);
-       	glColor3f(a/4,a/3,a*1.5); 
-	glVertex3f( surf->v[idx].x , surf->v[idx].y , surf->v[idx].z );
+        //glColor4f(a/4,a/3,a*1.5, 0.1+transparency);
+       	glColor3f(a/4.0f,a/3.0f,a*1.5f);
+        glVertex3f( surf->v[idx].x , surf->v[idx].y , surf->v[idx].z );
       };
     };    
   };
@@ -334,7 +336,7 @@ void GlPoints::draw(V3f zaxis){
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   glDepthMask(GL_FALSE);
 
-  sort(list[cur_level].begin(), list[cur_level].end(), psortable(zaxis));
+  std::sort(list[cur_level].begin(), list[cur_level].end(), psortable(zaxis));
 
   int r,g,b;
   
@@ -346,7 +348,7 @@ void GlPoints::draw(V3f zaxis){
     if(t_col < 1)t_col=1;
     if(t_col > 254)t_col=254;
     mapper.map(r,g,b ,t_col);
-    glColor4f(r / 256.0, g / 256.0, b / 256.0, tw_transparency);
+    glColor4f(r / 256.0f, g / 256.0f, b / 256.0f, tw_transparency);
     glVertex3i(x,y,z);
   };
   glEnd();
@@ -428,8 +430,8 @@ void GlPoints::pick(int x, int y){
   double fx, fy, fz;
   gluUnProject( x, y, -1, modelview, projection, (GLint *)viewport, &nx, &ny, &nz);
   gluUnProject( x, y, 1, modelview, projection, viewport, &fx, &fy, &fz);
-  V3f near(nx, ny, nz);
-  V3f far(fx, fy, fz);
+  V3f near((float)nx, (float)ny, (float)nz);
+  V3f far((float)fx, (float)fy, (float)fz);
   V3f dir(far); dir -= near;
   //we need to step maximum integer steps, to get into evry layer.
   int steps = (int)MAX3(ABS(near.x-far.x),ABS(near.y-far.y),ABS(near.z-far.z)); 

@@ -42,12 +42,22 @@ Basic misc definitions
       V3 operator+(const V3 & v) const { return V3(x+v.x, y+v.y, z+v.z);};
       V3 operator*(float m) const { return V3((T)(x*m), (T)(y*m), (T)(z*m));};
       V3 operator/(float m) const { return V3((T)(x/m), (T)(y/m), (T)(z/m));};
+	//for msvc; TODO: review
+	  V3 operator*(double m) const { return V3((T)(x*m), (T)(y*m), (T)(z*m));};
+      V3 operator/(double m) const { return V3((T)(x/m), (T)(y/m), (T)(z/m));};
+      V3 operator*(int m) const { return V3((T)(x*m), (T)(y*m), (T)(z*m));};
+      V3 operator/(int m) const { return V3((T)(x/m), (T)(y/m), (T)(z/m));};
  
       //no temporary vars
       V3 & operator-=(const V3 & v){ x-=v.x; y-=v.y, z-= v.z; return *this;};
       V3 & operator+=(const V3 & v){ x+=v.x; y+=v.y, z+= v.z; return *this;};
       V3 & operator*=(float m){ x*=m; y*=m, z*=m; return *this;};
       V3 & operator/=(float m){ x/=m; y/=m, z/=m; return *this;};
+	//for msvc; might also make sense. TODO: review
+	  V3 & operator*=(double m){ x*=(T)m; y*=(T)m, z*=(T)m; return *this;};
+      V3 & operator/=(double m){ x/=(T)m; y/=(T)m, z/=(T)m; return *this;};
+      V3 & operator*=(int m){ x*=(T)m; y*=(T)m, z*=(T)m; return *this;};
+      V3 & operator/=(int m){ x/=(T)m; y/=(T)m, z/=(T)m; return *this;};
 
       T length2(){ return (x*x+y*y+z*z);};
       float length(){ return sqrtf((float)length2());};

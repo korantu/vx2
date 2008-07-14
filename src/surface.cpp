@@ -100,7 +100,7 @@ V3f find_center_point(const Surface & surf)
     res += (*i);
   printf("total.result: %f,%f,%f\n", res.x, res.y, res.z);
 
-  res /= surf.v.size();
+  res /= (float)surf.v.size();
 
   return res;
 };
@@ -123,12 +123,12 @@ void refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n, const 
 	      (vtx&4)?ceil(v[i].z):floor(v[i].z));
     */
     
-    V3f vec((int)v[i].x, (int)v[i].y, (int)v[i].z);
+    V3f vec(v[i].x, v[i].y, v[i].z);
       V3f dir = vec-v[i];
       good = (dir.dot(n)<0);
       if(!t.half)good = true;
 
-      int cur = pnt.vol.getOffset(floor(v[i].x), floor(v[i].y), floor(v[i].z));
+      int cur = pnt.vol.getOffset((int)floor(v[i].x), (int)floor(v[i].y), (int)floor(v[i].z));
            
       if(cur < 0 || cur > 255*255*255)return;
       if(!(pnt.vol.mask[cur] & TRU)){
@@ -190,7 +190,7 @@ void rasterize_surface(Surface & surf,
   printf("Trying to fill it\n");
   center = find_center_point(surf); //this is the average;
   printf("The seed is %f %f %f; %d in total;  so what? \n", center.x, center.y, center.z, (int)surf.v.size());
-   int cur = pnt.vol.getOffset(center.x, center.y, center.z);
+   int cur = pnt.vol.getOffset((int)center.x, (int)center.y, (int)center.z);
    pnt.vol.mask[cur] |= BDR;
    pnt.vol.markers.push_back(cur);
   
