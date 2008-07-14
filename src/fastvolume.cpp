@@ -461,7 +461,7 @@ struct step{
   };
 
   bool operator< (const step & other) const{
-    return(score < other.score);
+    return(score > other.score);
   };
 
   
@@ -582,16 +582,20 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
 
       //magick formula from voxelbrain version 1.
-      (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do_internals || (is_border(vol,dest))?1:0);
+      //      (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do_internals || (is_border(vol,dest))?1:0);
 
 
+      //    (*i).score = (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do
+      
+      //let's experiment with penalties; and control them.
+      (*i).score = 10.0*(delta/1000.0f)+100.0*(1.0f-in_band)+5.0*(1.0f-friends);//
       if(diff > max)max = (int)diff;
       if(diff < min)min = (int)diff;
     };
 
     //3. Well... seems like sorting _is_ importand;
     std::sort(steps.begin(), steps.end());
-    //thr = steps[steps.size() * 0.9]
+        //thr = steps[steps.size() * 0.9]
 
     int cnt = 0;
 

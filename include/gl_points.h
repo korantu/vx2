@@ -73,10 +73,16 @@ GlPoints(): tool(0),  tw_transparency(0.35f),  cursor(128.0f,128.0f,128.0f), cur
   void find_surface(); ///find the several layers of the loaded volume; not always needed;
 
   bool save(const char *);
+
+  //draw point cloud
   void draw(V3f z);
+
+  //init opengl projection  
   void set_projection();
+
   void point_size(float _pnt){pnt = _pnt;};
 
+  
   void set_cursor(V3f);
 
   void update();
