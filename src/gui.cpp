@@ -186,8 +186,8 @@ void GuiContainer::create(){
   TwAddButton(bar, "", step_all, NULL, " label='Process (all)' key='g' group='Propagation'");
   TwAddButton(bar, "", remove_hanging_pieces, NULL, " label='Remove unconnected voxels' group='ROI' ");
   TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' group='Propagation'");
-  TwAddButton(bar, "", reseed, NULL, " label='Reseed' group='ROI' ");
-  TwAddButton(bar, "", kill_seeds, NULL, " label='Kill Seeds' group='ROI'");
+  TwAddButton(bar, "", reseed, NULL, " label='Init propagation front' group='ROI' ");
+  TwAddButton(bar, "", kill_seeds, NULL, " label='Clear propagation front' group='ROI'");
   TwAddButton(bar, "", apply_mask, NULL, " label='Toggle Preview' group='ROI' ");
   TwAddButton(bar, "", load_file_truth, NULL, " label='Load' group='Ground truth' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &radius, " min=1 max=60 step=1 label='Modification radius' group='Ground truth' help='The size of the area where we want to grow the truth' ");
