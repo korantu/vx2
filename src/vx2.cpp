@@ -1,12 +1,6 @@
-
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-
 #define GLFW_DLL
 
-#include "GL/glfw.h"
+#include "glfw.h"
 #include "gui.h"
 #include "v3.h"
 #include <stdio.h>
@@ -141,13 +135,12 @@ struct main_module : public gl_wrapper_reciever {
 
 
   void draw(){
-    if(render_required == true || st.interface_updated == true)
-	{
+    if(render_required == true || st.interface_updated == true){
       //
       if(volume.vol.updated){
 	volume.vol.updated = false;
 	crossection.update(volume.vol, volume.cursor);
-	  };
+      };
       
       //proj.rot(0.15, 0.092);
       //printf("w%d:h%d\n", width, height);
@@ -162,11 +155,11 @@ struct main_module : public gl_wrapper_reciever {
    
       if(st.width>st.height){
 	glOrtho((-(float)st.width/(float)st.height), ((float)st.width/(float)st.height), -1, 1, -2, 2);
-	volume.point_size(1.5f*((float)st.height)/(float)256);
+	volume.point_size(1.5*((float)st.height)/(float)256);
       }else{
 	glOrtho(-1, 1, (-(float)st.height/(float)st.width), ((float)st.height/(float)st.width), -2, 2);
-	volume.point_size(1.5f*((float)st.width)/(float)256);
-	  };
+	volume.point_size(1.5*((float)st.width)/(float)256);
+      };
 
  
   
@@ -186,8 +179,7 @@ struct main_module : public gl_wrapper_reciever {
 
       render_required = false;
       st.interface_updated = false;
-	  glfwSwapBuffers();
-	}else{
+    }else{
       //do nothing; 
     };
   };
@@ -533,7 +525,7 @@ int main(int argc, char ** argv)
   while( glfwGetWindowParam(GLFW_OPENED) && !glfwGetKey(GLFW_KEY_ESC) )
     {
       core.draw();
-      glfwPollEvents();
+      glfwSwapBuffers();
       glfwSleep(0.02);
     }
 
@@ -545,19 +537,3 @@ int main(int argc, char ** argv)
   return 0;
 };
 
-/// windows
-
-
-#ifdef WIN32
-/* A dummy win function */
-int WINAPI WinMain(HINSTANCE hInstance,  HINSTANCE hPrevInstance, LPSTR    lpCmdLine, int       nCmdShow){
-	int argc = 1;
-	char * argv[] = {
-		"vx2"
-	};
-
-	main(argc, argv);
-	return 0;
-
-};
-#endif
