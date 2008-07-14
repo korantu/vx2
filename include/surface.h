@@ -34,12 +34,12 @@ void surface_sort(V3f direction);
 
 vector<Surface> * get_active_surfaces();
 
-/// Rasterization interface
 bool read_surface(Surface & surf, std::string name); 
+bool read_surface_binary(Surface & surf, std::string name); 
 
-/**
+/*
    Structure to control the rasterization process
- */
+*/
 struct RenderingTraits{
   int dead;     /// 
   bool half;    /// Include partial occupancy voxels.
@@ -49,14 +49,11 @@ struct RenderingTraits{
 };
 
 //bool read_surface_binary(Surface & surf, std::string name);
-
-/**
-  
- */
 void rasterize_surface(Surface & surf, 
 		    GlPoints & pnt,         //the point set to render 
 		    const RenderingTraits &); //how to render
 
+// 
 V3f find_center_point(const Surface & surf);
 
 void fill_surface(Surface & surf, GlPoints & pnt, const RenderingTraits);
