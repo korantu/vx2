@@ -12,6 +12,13 @@
 #include "color.h"
 
 
+#ifdef LINUX
+/// rtificially adding a dummy local constant to forc this thing compile;
+/// just to see if it works;
+/// needed for GCC4.1 
+int  __stack_chk_fail_local;
+#endif
+
 ///mouse button
 ///	Callback function called by GLFW when a mouse button is clicked
 struct main_module : public gl_wrapper_reciever {

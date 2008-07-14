@@ -7,11 +7,10 @@ VX2 := navigator.o \
 	gl_wrapper.o \
 	slices.o \
 	color.o \
-	test_ssp.o \
 	gui.o \
 	surface.o \
 	macosx.o \
-	vx2.o 
+	vx2.o
 
 VX2_SRC := ../../src/v3tools.cpp \
 	../../src/fastvolume.cpp \
@@ -23,9 +22,8 @@ VX2_SRC := ../../src/v3tools.cpp \
 	../../src/surface.o \
 	../../src/macosx.o \
 	../../src/gui.cpp \
-	test_ssp.cpp \
 	../../src/macosx.cpp \
-	../../src/vx2.cpp 
+	../../src/vx2.cpp 	
 
 deps: $(VX2_SRC)
 	$(CXX) $(CXXFLAGS) -M $(VX2_SRC) > deps.txt

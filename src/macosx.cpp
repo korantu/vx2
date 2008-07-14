@@ -1,4 +1,3 @@
-//#include <Carbon/Carbon.h>
 #include <string.h>
 #include <string>
 
@@ -7,6 +6,8 @@ enum dialog_type {
 };
 
 #ifdef MACOSX
+#include <Carbon/Carbon.h>
+
 std::string GetOpenFileFromUser(dialog_type d_type)
 {
   NavDialogCreationOptions dialogOptions;
