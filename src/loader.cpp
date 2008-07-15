@@ -287,9 +287,9 @@ void Loader::parse(raw data, FastVolume & result, bool read){
  
     
   for (z = 0 ; z < depth ; z++){
-    for (i = y = 0 ; y < height ; y++)
+    for (y = height-1 ; y >= 0 ; y--)
       {
-	for (x = 0 ; x < width ; x++, i++)
+	for (x = 0 ; x < width ; x++)
 	  {
 	  	if(read){
 		  switch (type)
