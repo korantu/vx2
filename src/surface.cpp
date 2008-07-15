@@ -14,6 +14,117 @@ vector<Surface> * get_active_surfaces(){
   return & __surfaces;
 };
 
+int read_int(int fd){
+  unsigned char buf[4];
+  int res;
+  unsigned char * pnt = (unsigned char *)&res;
+  if(4 != read(fd, (void *) buf, 4))throw "Unable to read integer";
+  for(int i = 0; i < 4; i++){
+    pnt[i] = buf[3-i];
+  };
+  return res;
+};
+
+float read_float(int fd){
+  unsigned char buf[4];
+  float res;
+  unsigned char * pnt = (unsigned char *)&res;
+  if(4 != read(fd, (void *) buf, 4))throw "Unable to read float";
+  for(int i = 0; i < 4; i++){
+    pnt[i] = buf[3-i];
+  };
+  return res;
+};
+
+//TODO: unify read_surface_binary
+
+bool read_surface_binary(Surface & surf, std::string name){
+  int points;     //for the number of points
+  int tris;       //for the number of triangles
+  unsigned char buf[1000]; //for data
+  bool result = true;
+  
+  int file = open(name.c_str(), O_RDONLY, 0);
+  if(file < 0) return false; //cannot open file.
+
+  try {
+    buf[0]=0; read(file, (void *)(buf), 3);
+    if(buf[0]==0xff & buf[1]==0xff & buf[2]==0xfe ){
+      printf("Format indicator matches.");
+    }else{
+      throw "Incorrect file";
+    };
+    
+    //searching for 0x0a 0x0a
+    int check = 0;
+    
+    while((check = read(file, (void *) buf, 1)) > 0){
+      if(buf[0] == 0x0a){ //check if another one is behind; if so - done.
+	read(file, (void *) buf, 1);
+	  if(buf[0] == 0x0a)break;
+      };
+    };
+    if(check == 0)throw "Error while looking for the end of signature";
+    
+    points = read_int(file);
+    tris = read_int(file);
+    
+    printf("Expecting %d points and %d triangles.\n", points, tris);
+    
+  //reading points and pushing normals
+  for(int i = 0; i < points; i++){
+    V3f in;
+    int dummy;
+    in.x = read_float(file);
+    in.y = read_float(file);
+    in.z = read_float(file);
+    in = V3f(-in.x, +in.z, +in.y);
+    in+=V3f(128, 127, 128);
+    printf("%f, %f, %f\n", in.x, in.y, in.z);
+    surf.v.push_back(in);
+    surf.n.push_back(V3f(0,0,0));
+  };
+
+  for(int i = 0; i < tris; i++){
+    int a, b, c, zero; 
+    a = 0;
+    b = 0;
+    c = 0;
+    a = read_int(file);
+    b = read_int(file);
+    c = read_int(file);
+    surf.tri.push_back(V3i(a,b,c));
+    if(i < 3)printf("((%d %d %d))\n", a, b, c);
+  
+    V3f n; n.cross(surf.v[b]-surf.v[a], surf.v[c]-surf.v[a]);
+    n /= -n.length(); //normal - outside
+
+    surf.n[a] = surf.n[a] + n; 
+    surf.n[b] = surf.n[b] + n; 
+    surf.n[c] = surf.n[c] + n; 
+  };
+
+
+
+  } catch (const char * a){
+    printf("Problem occured: %s\n", a);
+    result = false;
+  };
+
+  close(file);
+
+  for(unsigned int i = 0; i < surf.n.size(); i++){
+    V3f n = surf.n[i];
+    n /= n.length();
+    surf.n[i] = n;
+  };
+
+  printf("stor size is:%d\n", (int)surf.v.size());
+  
+  return true;
+
+};
+
 bool read_surface(Surface & surf, std::string name){
   int points;     //for the number of points
   int tris;       //for the number of triangles
@@ -180,19 +291,18 @@ inline float interpolate_lookup(V3f v, GlPoints & pnt, lookup_type what){
     
     switch(what){
     case LOOKUP_DEPTH:
-      corner_value = (float)pnt.vol.depth[pnt.vol.getOffset(
+      corner_value =  (float)pnt.vol.depth[pnt.vol.getOffset(
 								(int)corner.x, 
 								(int)corner.y, 
 								(int)corner.z)];
       break;
     case LOOKUP_VALUE:
-      corner_value = (float)pnt.vol.vol[pnt.vol.getOffset(
+      corner_value =  (float)pnt.vol.vol[pnt.vol.getOffset(
 								(int)corner.x, 
 								(int)corner.y, 
 								(int)corner.z)];
       break;
     };      
-
     //distance between the corner and the point
     float l = (v - corner).length2();
     if(l < epsilon)return corner_value;
