@@ -45,8 +45,8 @@ bool read_surface(Surface & surf, std::string name){
     int dummy;
     fscanf(f, "%f  %f  %f  %d\n", &in.x, &in.y, &in.z, &dummy);
     if(feof(f)) throw "eof";
-    in = V3f(-in.x, -in.z, +in.y);
-    in+=V3f(128, 128, 128);
+    in = V3f(-in.x, +in.z, +in.y);
+    in+=V3f(128, 127, 128);
     surf.v.push_back(in);
     surf.n.push_back(V3f(0,0,0));
   };

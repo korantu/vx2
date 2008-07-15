@@ -129,6 +129,7 @@ void GlPoints::set_projection(){
   glScalef(2.0/256.0, 2.0/256.0, 2.0/256.0);
   glTranslatef(-128.0, -128.0, -128.0);
 
+
   //ok, the modelview transform is complete here, dumping it for lookup:
 
   glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
