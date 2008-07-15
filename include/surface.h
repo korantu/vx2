@@ -20,7 +20,7 @@ using namespace std;
 struct Surface{
   vector<V3f> n; ///Normals
   vector<V3f> v; ///Vectors (have to be of the same size as normals;  
-
+  vector<V3f> c; ///colors
   vector<V3i> tri; ///indices
 
   int n_tris; 
@@ -47,6 +47,11 @@ struct RenderingTraits{
   bool tru;     /// Use tru bit for rasterizaion
   // RenderingTraits();
 };
+
+///initialize the color tag.
+///compare outer and inner intensities
+void analyze_surface(Surface & surf, 
+		    GlPoints & pnt); //how to render
 
 //bool read_surface_binary(Surface & surf, std::string name);
 void rasterize_surface(Surface & surf, 

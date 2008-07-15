@@ -235,6 +235,7 @@ void FastVolume::add_point(V3f &pnt){
 
 //here we add tools; to be replaced with proper structures
 void FastVolume::use_tool(int idx, int what, int sz){
+
   int x, y, z;
   int c;
 
@@ -327,129 +328,6 @@ bool lookahead_spread(FastVolume * in, std::vector<int> &res, int start, int dir
   return false; //no luck; just propagate one step.
 };
 
-/// make a single step of propagation
-//a structure for stepping in different ways.
-/*
-struct stepper{
-  FastVolume & v;
-  stepper(FastVolume & _v): v(_v){};
-  virtual void make_step(const std::vector<int> & in, std::vector<int> & out)  = 0;   
-};
-
-struct jumping_stepper: public stepper {
-  int threshold;
-  int dist;
-  int max_depth;
-  jumping_stepper(FastVolume & _v, int _threshold, int _dist, int _max_depth):threshold(_threshold), dist(_dist), max_depth(_max_depth), stepper(_v){};
-
-  virtual void make_step(const std::vector<int> & in, std::vector<int> & out);   bool lookahead(std::vector<int> &res, int start, int dir, int amount);
-
-};
-
-bool jumping_stepper::lookahead(std::vector<int> &res, int start, int dir, int amount){
-  int cur = start;
-  for(int i = 0; i <= amount; i++){
-    cur += dir;
-    if(v.mask[cur] & TRU)return false;
-    if(v.mask[cur] & (ZRO | MASK)){//we are out; mark everything in between
-      for(int j = i; j > 0; j--){
-	cur -= dir;	
-	if(!(BDR & v.mask[cur])){
-	  v.mask[cur] |= BDR;
-	  res.push_back(cur);
-	};
-      };
-      return true;  // was able to jump
-    };
-  };
-  return false; //no luck; just propagate one step.
-
-};
-
-
-void jumping_stepper::make_step(const std::vector<int> & in, std::vector<int> & res){
-  int cur, cur_idx, cur_val;
-    for(std::vector<int>::const_iterator i = in.begin(); i != in.end(); i++){
-      cur = *i;
-      //if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
-      v.mask[cur] -= MASK & v.mask[cur];
-      v.mask[cur] |= MSK;
-      //every neighbour
-      for(int j = 0; j < 6; j++){
-	cur_idx = cur + v.neighbours[j];
-	cur_val = v.vol[cur_idx];
-	if(MASK & v.mask[cur_idx]){
-	  continue;
-	  //mask[cur_idx] -= (BDR & (mask[cur_idx]);
-	};
-	//try lookahead first; proceed as normal if unsuccessful;
-	if(!lookahead(res, cur, v.neighbours[j], dist)){
-	  if((!((ZRO | TRU | MASK) & v.mask[cur_idx])) && (cur_val < threshold) && (v.depth[cur_idx] < max_depth)){
-	    if(!(BDR & v.mask[cur_idx])){
-	      v.mask[cur_idx] |= BDR;
-	      res.push_back(cur_idx);
-	    };
-	  };
-	};
-      };
-    };  
-};
-
-*/
-
-/*
-void FastVolume::propagate_jump(int threshold, int dist, int max_depth, int times){
-  // cur_gen++;
-  int cur, cur_val, cursor_idx;
-  std::vector<int> res;
-  int cur_idx;  
-
-  if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
-
-  for(int iter = 0; iter < times; iter++){
-    res.clear();
-  //every point
-    for(std::vector<int>::iterator i = markers.begin(); i != markers.end(); i++){
-      cur = *i;
-      //if(!GEN(mask[cur]))mask[cur]=cur_gen | MSK; //mark it as mask
-      mask[cur] -= MASK & mask[cur];
-      mask[cur] |= MSK;
-      //every neighbour
-      if(!in_scope(cur)){ //wait a bit
-	mask[cur] |= BDR;
-	res.push_back(cur);
-      }else{
-	For(int j = 0; j < 6; j++){
-	  cur_idx = cur + neighbours[j];
-	  cur_val = vol[cur_idx];
-	  if(MASK & mask[cur_idx]){
-	    continue;
-	    //mask[cur_idx] -= (BDR & (mask[cur_idx]);
-	  };
-	  //try lookahead first; proceed as normal if unsuccessful;
-	  if(!lookahead(this, res, cur, neighbours[j], dist, cur_gen)){
-	    if((!((ZRO | TRU | MASK) & mask[cur_idx])) && (cur_val < threshold) && ((depth[cur_idx] < max_depth) || depth == 0)){
-	      if(!(BDR & mask[cur_idx])){
-		mask[cur_idx] |= BDR;
-		res.push_back(cur_idx);
-		undo_buffer.push_back(cur_idx);
-	      };
-	    };
-	  };
-	};
-      }; //in scope
-    };
-    markers = res;
-    printf("Markers %d\n", markers.size());
-  };
-  if(cur_gen > (GEN_MAX-3))downshift(MASK);
-
-  if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
-
-  //reseed();
-
-};
-*/
 
 struct step{
   int from;
@@ -466,8 +344,6 @@ struct step{
 
   
 };
-
-
 
 float smooth_bell(float x){
   if(x<0)x=-x;
@@ -547,7 +423,8 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
     float max = 0;
     float min = 100000;
-  float worst_score = 0.0f; 
+    
+    float worst_score = 0.0f; 
     
 
     /// probability of each particular voxel being good,
@@ -576,8 +453,8 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
       //depth factor
       float f_depth = 0.1f;
-      if(max_depth < 10){
-	f_depth=1.0f-0.1f*depth[the_step.to]; //do not consider 
+      if(max_depth < 15){
+	f_depth=1.0f-0.07f*depth[the_step.to]; //do not consider 
       }else{
 	f_depth = 1.0;
       };                                              //depth too deep...
@@ -598,7 +475,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       delta = ((max_delta - delta)/max_delta);
       delta *= delta;
       delta *= delta;
-      (*i).score = delta*in_band;// (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do
+      (*i).score = delta*in_band*f_depth*f_depth*distance;// (1.0f-delta/1000.0f)*in_band*friends*f_depth*distance;//*(do
       
       //let's experiment with penalties; and control them.
       //(*i).score = (1.0f-in_band);//
@@ -698,7 +575,7 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
     markers = res;
     printf("Markers %d\n", (int)markers.size());
   };
-  if(cur_gen > (GEN_MAX-3))downshift(MASK);
+  //if(cur_gen > (GEN_MAX-3))downshift(MASK);
 
   if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
 
@@ -762,13 +639,17 @@ void FastVolume::undo(){
   //reseed();
 
 };
-
+/*
 void FastVolume::downshift(int flags = MASK){
   for(int i = getOffset(1,1,1); i < getOffset(255,255,255); i++){
     if((flags & mask[i]) && (GEN(mask[i]) > 1))
       { //ok, we want to deal with this voxel- it is our type and can be downshifted
-	mask[i] = /*flags*/((0xff-GEN_MAX) & mask[i]) + /*gen-1*/(GEN(mask[i])-1);
+	mask[i] = / *flags* /((0xff-GEN_MAX) & mask[i]) + / *gen-1* /(GEN(mask[i])-1);
     
       };
   };
 };
+*/
+
+
+

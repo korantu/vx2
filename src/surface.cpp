@@ -154,6 +154,91 @@ void refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n, const 
   
 };
 
+// weighted average of all corners 
+enum lookup_type {
+  LOOKUP_DEPTH,
+  LOOKUP_VALUE
+};
+
+inline float interpolate_lookup(V3f v, GlPoints & pnt, lookup_type what){
+  //check all the sides
+  const int X = 1; //bit fields
+  const int Y = 2;
+  const int Z = 4;
+  const float epsilon = 0.01f;
+
+  float total_distance = 0.0f;
+  float total = 0;
+
+  //each corner
+  for(int i = 0 ; i < 8; i++){
+    float corner_value = 0.0f;
+    //exact corner position
+    V3f corner((i & X)?ceilf(v.x):floorf(v.x),
+	     (i & Y)?ceilf(v.y):floorf(v.y),
+	     (i & Z)?ceilf(v.z):floorf(v.z));
+    
+    switch(what){
+    case LOOKUP_DEPTH:
+      corner_value = (float)pnt.vol.depth[pnt.vol.getOffset(
+								(int)corner.x, 
+								(int)corner.y, 
+								(int)corner.z)];
+      break;
+    case LOOKUP_VALUE:
+      corner_value = (float)pnt.vol.vol[pnt.vol.getOffset(
+								(int)corner.x, 
+								(int)corner.y, 
+								(int)corner.z)];
+      break;
+    };      
+
+    //distance between the corner and the point
+    float l = (v - corner).length2();
+    if(l < epsilon)return corner_value;
+
+    total += 1.0f/l*corner_value;
+    total_distance += 1.0f/l;
+  };
+
+  return total / total_distance;
+};
+
+void analyze_surface(Surface & surf,
+		     GlPoints & pnt){
+  surf.c.clear(); // remove all previous analysis
+  
+  V3f n, v;
+  float depth;
+  float v0, vup, vdown;
+
+  //each vertex
+  for(int i = 0; i < surf.v.size(); i++){
+    v = surf.v[i];
+    n = surf.n[i];
+    n /= n.length();
+    
+    V3f c(0.7f, 0.7f, 0.7f);
+    
+
+    //can do the lookup directly, as well. no hits in quality or performance
+    depth = interpolate_lookup(v, pnt, LOOKUP_DEPTH);
+    if(depth > 10.0) depth = 10.0f; depth = depth/10.0f;
+
+    v0 =   interpolate_lookup(v, pnt, LOOKUP_VALUE);
+    vup =   interpolate_lookup(v+n*2, pnt, LOOKUP_VALUE);
+    vdown =   interpolate_lookup(v-n*2, pnt, LOOKUP_VALUE);
+    int determinator = ((vup < v0)?0:2)+((v0 < vdown)?0:1);
+    float difference = fabs(v0-vup)+fabs(v0-vdown);
+    V3f cols[4] = {V3f(0.0, 1.0, 0.0), V3f(0.0, 0.0, 1.0),
+                V3f(1.0, 0.0, 0.0), V3f(0.1, 1.0, 1.0)};
+		
+    c = cols[determinator]*(1.0-depth)+V3f(0.7f, 0.7f, 0.7f)*depth;
+    
+    surf.c.push_back(c); 
+  };
+
+};
 
 void rasterize_surface(Surface & surf, 
 		    GlPoints & pnt,         //the point set to render 
@@ -165,7 +250,7 @@ void rasterize_surface(Surface & surf,
   //V3f m[3];
   //  std::vector<int> tristor; //triangle storage
 
-  if(surf.v.size() > 3)return; ///not enough triangles
+  if(surf.v.size() < 3)return; ///not enough triangles
 
   //loop trough every triangle and refine it.
   for(vector<V3i>::const_iterator i = surf.tri.begin(); 

@@ -209,6 +209,7 @@ struct compare_tris{
   };
 };
 
+
 void GlPoints::draw(V3f zaxis){
 
   int cursor_size = 10;
@@ -302,7 +303,9 @@ void GlPoints::draw(V3f zaxis){
 	//transparency *= transparency;
 	//transparency *= transparency;
         //glColor4f(a/4,a/3,a*1.5, 0.1+transparency);
-       	glColor3f(a/4.0f,a/3.0f,a*1.5f);
+
+	//      	glColor3f(a/4.0f*surf->c[idx].x,a/3.0f*surf->c[idx].y,a*1.5f*surf->c[idx].z);
+	glColor3f(surf->c[idx].x,surf->c[idx].y,surf->c[idx].z);
         glVertex3f( surf->v[idx].x , surf->v[idx].y , surf->v[idx].z );
       };
     };    

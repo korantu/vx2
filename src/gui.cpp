@@ -511,6 +511,7 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData)
 	   (int)it.n.size(), (int)it.tri.size() );
     
     RenderingTraits t = {0, false, true, true};
+    analyze_surface(it, *the_gui->pnt);
     rasterize_surface(it, *the_gui->pnt, t);
 
     get_active_surfaces()->push_back(it);
