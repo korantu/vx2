@@ -202,9 +202,17 @@ void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * b
 	  mapper.map((void *)(&(buf[pos*3])), vol[offset]);
           //buf[pos*3]=(depth[offset]*20)%256;
 	}else{
-	  buf[pos*3]=(mask[offset] & BDR)?255:0; 
-	  buf[pos*3+1]=(mask[offset] & MSK)?255:0; 
-	  buf[pos*3+2]=(mask[offset] & TRU)?255:0;;
+	  mapper.map((void *)(&(buf[pos*3])), vol[offset]);
+	  int flags[] = {BDR, MSK, TRU};
+
+	  for(int i = 0; i < 3; i++){
+	    {
+	      buf[pos*3+i]+=(mask[offset] & flags[i])?
+		((buf[pos*3+i] < 55)?200:255-buf[pos*3+i]):
+		0;
+	    }; 
+	  };
+
 	}
       }
       else  //completely outside

@@ -342,8 +342,10 @@ void analyze_surface(Surface & surf,
     float difference = fabs(v0-vup)+fabs(v0-vdown);
     V3f cols[4] = {V3f(0.0, 1.0, 0.0), V3f(0.0, 0.0, 1.0),
                 V3f(1.0, 0.0, 0.0), V3f(0.1, 1.0, 1.0)};
-		
-    c = cols[determinator]*(1.0-depth)+V3f(0.7f, 0.7f, 0.7f)*depth;
+
+    float diff = fabs(vup-v0)+fabs(vdown-v0);
+    //diff /= 20;
+    c = cols[determinator]*diff*(1.0-depth)+V3f(0.7f, 0.7f, 0.7f)*depth;
     
     surf.c.push_back(c); 
   };
