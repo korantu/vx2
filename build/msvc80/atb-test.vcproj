@@ -118,7 +118,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="$(SolutionDir)../../include;$(SolutionDir)../../deps/glfw-bin/include;$(SolutionDir)../../deps/atb-bin/include/GL;$(SolutionDir)../../deps/atb-bin/include"
+				AdditionalIncludeDirectories="$(SolutionDir)../../include;$(SolutionDir)../../deps/glfw-bin/include/GL;$(SolutionDir)../../deps/glfw-bin/include;$(SolutionDir)../../deps/atb-bin/include/GL;$(SolutionDir)../../deps/atb-bin/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"

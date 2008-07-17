@@ -7,6 +7,15 @@ A file for surface manipulation;
 
 #include "surface.h"
 
+#ifdef WIN32
+#include <io.h>
+#define OPEN _open
+#define READ _read
+#define BIGENDIAN
+#else
+#define OPEN open
+#define READ read
+#endif
 vector<Surface> __surfaces;
 
 //accessor. making sure the actual storage is only defined once.
@@ -18,10 +27,8 @@ int read_int(int fd){
   unsigned char buf[4];
   int res;
   unsigned char * pnt = (unsigned char *)&res;
-  if(4 != read(fd, (void *) buf, 4))throw "Unable to read integer";
-  for(int i = 0; i < 4; i++){
-    pnt[i] = buf[3-i];
-  };
+  if(4 != READ(fd, (void *) buf, 4))throw "Unable to read integer";
+  for(int i = 0; i < 4; i++)pnt[i] = buf[3-i];
   return res;
 };
 
@@ -29,10 +36,9 @@ float read_float(int fd){
   unsigned char buf[4];
   float res;
   unsigned char * pnt = (unsigned char *)&res;
-  if(4 != read(fd, (void *) buf, 4))throw "Unable to read float";
-  for(int i = 0; i < 4; i++){
-    pnt[i] = buf[3-i];
-  };
+  if(4 != READ(fd, (void *) buf, 4))throw "Unable to read float";
+//reversing
+  for(int i = 0; i < 4; i++)pnt[i] = buf[3-i];
   return res;
 };
 
@@ -44,7 +50,7 @@ bool read_surface_binary(Surface & surf, std::string name){
   unsigned char buf[1000]; //for data
   bool result = true;
   
-  int file = open(name.c_str(), O_RDONLY, 0);
+  int file = OPEN(name.c_str(), O_RDONLY, 0);
   if(file < 0) return false; //cannot open file.
 
   try {
@@ -58,7 +64,7 @@ bool read_surface_binary(Surface & surf, std::string name){
     //searching for 0x0a 0x0a
     int check = 0;
     
-    while((check = read(file, (void *) buf, 1)) > 0){
+    while((check = READ(file, (void *) buf, 1)) > 0){
       if(buf[0] == 0x0a){ //check if another one is behind; if so - done.
 	read(file, (void *) buf, 1);
 	  if(buf[0] == 0x0a)break;

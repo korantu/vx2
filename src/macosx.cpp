@@ -114,7 +114,7 @@ OPENFILENAME ofn;
 
     ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
     ofn.hwndOwner = NULL;
-    ofn.lpstrFilter = "FreeSurfer volumes (*.mgz)\0*.mgz\0FreeSurfer surfaces (*.pial.asc)\0*.asc\0";
+    ofn.lpstrFilter = "FreeSurfer volumes (*.mgz)\0*.mgz\0FreeSurfer surfaces (*.pial, *.pial.asc)\0*.*\0";
     ofn.lpstrFile = szFileName;
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
