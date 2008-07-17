@@ -245,7 +245,7 @@ void TW_CALL GuiContainer::load_file( void * UserData){
   };
 
   get_active_surfaces()->clear();
-
+  the_gui->sl->update();
   the_gui->pnt->update(); //and make sure all is shown up.....
 
 };
@@ -489,6 +489,7 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 void TW_CALL GuiContainer::grow_truth( void * UserData){
   do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
   the_gui->pnt->vol.updated = true;
+  the_gui->sl->update();
   the_gui->pnt->update(); //and make sure all is shown up.....
 };
 
@@ -517,6 +518,8 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData)
 
     get_active_surfaces()->push_back(it);
   };  
+  the_gui->sl->update();
+
 };
 
 void do_all_work(GlPoints * pnt){

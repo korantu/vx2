@@ -13,7 +13,7 @@
 
 
 #ifdef LINUX
-/// rtificially adding a dummy local constant to forc this thing compile;
+/// artificially adding a dummy local constant to force this thing compile;
 /// just to see if it works;
 /// needed for GCC4.1 
 int  __stack_chk_fail_local;
