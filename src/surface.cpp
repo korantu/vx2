@@ -345,12 +345,19 @@ void analyze_surface(Surface & surf,
     vup =   interpolate_lookup(v+n*2, pnt, LOOKUP_VALUE);
     vdown =   interpolate_lookup(v-n*2, pnt, LOOKUP_VALUE);
     int determinator = ((vup < v0)?0:2)+((v0 < vdown)?0:1);
-    V3f cols[4] = {V3f(0.0, 1.0, 0.0), V3f(0.0, 0.0, 1.0),
-                V3f(1.0, 0.0, 0.0), V3f(0.1, 1.0, 1.0)};
+    V3f cols[4] = {V3f(1.0, 0.0, 1.0), V3f(0.0, 0.0, 1.0),
+                V3f(1.0, 0.0, 0.0), V3f(0.0, 1.0, 0.0)};
 
     float diff = (fabs(vup-v0)+fabs(vdown-v0))/10.0f;
     float intensity = (vup+v0+vdown)/100.0f;
     //diff /= 20;
+
+    /***
+	color intensity is proportional to the value,
+	inversely proportional to difference
+	and fades out to gray with depth 
+     ***/
+
     c = cols[determinator]/diff*intensity*(1.0-depth)+V3f(0.7f, 0.7f, 0.7f)*depth;
     
     surf.c.push_back(c); 

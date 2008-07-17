@@ -139,7 +139,7 @@ void slices::draw(){
   printf("Setting cursor at %f %f %f, getting %d %d\n", pnts->cursor.x, 
 	 pnts->cursor.y,
 	 pnts->cursor.z, x, y);
-  //locate(center, x, y);
+  locate(center, x, y);
   
   glDisable(GL_DEPTH_TEST);
   
