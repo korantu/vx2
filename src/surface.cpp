@@ -321,18 +321,32 @@ inline float interpolate_lookup(V3f v, GlPoints & pnt, lookup_type what){
 };
 
 struct point_property{
-  float param[5];
   enum {
     CONFIGURATION = 0,
     DEPTH,
     CURVATURE,
     GRADIENT,
     INTENSITY,
+    INTENSITY_PER_GRADIENT,
     LAST_PARAM
   };
+  float param[LAST_PARAM+1];
+
+  //getters  
+  inline float depth() const {return param[DEPTH];};
+  inline float configuration() const {return param[CONFIGURATION];};
+  inline float curvature() const {return param[CURVATURE];};
+  inline float gradient() const {return param[GRADIENT];};
+  inline float intensity() const {return param[INTENSITY];};
+  inline float intensity_per_gradient() const {return param[INTENSITY_PER_GRADIENT];};
+
+  //setters
+  inline void depth(float in) {param[DEPTH] = in;};
+  inline void configuration(float in) { param[CONFIGURATION]=in;};
+  inline void curvature(float in)  { param[CURVATURE]=in;};
+  inline void gradient(float in)  {param[GRADIENT]=in;};
+  inline void intensity(float in)  {param[INTENSITY]=in;};
 };
-
-
 
 struct point_set_property{
   point_property min;
@@ -355,6 +369,10 @@ struct point_set_property{
 	if(cur_property->param[i] > max.param[i])max.param[i] = cur_property->param[i];	
       };
     };
+    //debug
+    for(int i = 0; i < point_property::LAST_PARAM; i++){
+      printf("param %d is from %f to %f\n", i, min.param[i], max.param[i]);
+    };   
   };
   
   //scale all parametes in the range [0..1]
@@ -369,11 +387,14 @@ struct point_set_property{
 
 //returns color from point property and point set property
 V3f analyze_point(const point_property & in, point_set_property & t){
-  //  V3f c(in.configuration, in.gradient, in.intensity);
+  
+  V3f background(0.7, 0.7, 0.7);
+  if(in.depth() > 0.9f) return background;
 
-  V3f c(1.0, 0.0, 0.0);
-  return c*(1.0f-in.param[point_property::DEPTH]) + \
-         V3f(0.7, 0.7, 0.7)*in.param[point_property::DEPTH];
+
+  //  V3f c(in.configuration(), in.gradient(), in.intensity());
+  V3f c((in.configuration() < 0.5 || (in.configuration() > 0.5 && in.configuration() < 0.75))?1:0, 0.3*in.curvature(), (in.intensity_per_gradient()));
+   return c*(1.0f-in.depth())+ background*in.depth();
 };
 
 void analyze_surface(Surface & surf,
@@ -396,37 +417,48 @@ void analyze_surface(Surface & surf,
 
     //can do the lookup directly, as well. no hits in quality or performance
     depth = interpolate_lookup(v, pnt, LOOKUP_DEPTH);
-    if(depth > 10.0) depth = 10.0f; depth = depth/10.0f;
-
+    depth = depth/10.0f;
+    cur_point.param[point_property::DEPTH] = depth;
+    if(depth > 1.0){
+      //do nothing, really.
+      depth = 1.1f;
+    }else{ //ok, shallow, makes sense to process
     v0 =   interpolate_lookup(v+n, pnt, LOOKUP_VALUE);
     vup =   interpolate_lookup(v, pnt, LOOKUP_VALUE);
     vdown =   interpolate_lookup(v-n, pnt, LOOKUP_VALUE);
     
-    if((vup < v0) && (v0 < vdown))cur_point.param[point_property::CONFIGURATION] = 0;
-    if((vup > v0) && (v0 < vdown))cur_point.param[point_property::CONFIGURATION] = 1;
-    if((vup < v0) && (v0 > vdown))cur_point.param[point_property::CONFIGURATION] = 2;
-    if((vup > v0) && (v0 > vdown))cur_point.param[point_property::CONFIGURATION] = 3;
+    if((vup < v0) && (v0 < vdown))cur_point.configuration(0.0f);
+    if((vup > v0) && (v0 < vdown))cur_point.configuration(1.0f);
+    if((vup < v0) && (v0 > vdown))cur_point.configuration(2.0f);
+    if((vup > v0) && (v0 > vdown))cur_point.configuration(3.0f);
 
     cur_point.param[point_property::GRADIENT] = (fabs(vup-v0)+fabs(vdown-v0));
     cur_point.param[point_property::INTENSITY] = v0;
-    cur_point.param[point_property::DEPTH] = depth;
     cur_point.param[point_property::CURVATURE] = 0.0f;
+    cur_point.param[point_property::INTENSITY_PER_GRADIENT] = cur_point.intensity()/cur_point.gradient();
+
+    };
 
     points.push_back(cur_point);
     //    c = cols[determinator]/diff*intensity*(1.0-depth)+V3f(0.7f, 0.7f, 0.7f)*depth;
   }; //for(int i = 0; i < surf.v.size(); i++)
-  /*
-  for(int i = 0; i < .size(); i++){
-    V3i tri = surf.tris[i];
-    V3f n1 = surf.n[tri.x];
-    V3f n2 = surf.n[tri.y];
-    V3f n3 = surf.n[tri.z];
+  
+  //curvature
+  for(int i = 0; i < surf.tri.size(); i++){
+  
+    V3i ctri = surf.tri[i];
+
+    if(points[ctri.x].depth() > 1)continue; //do not bother with deep points
+    V3f n1 = surf.n[ctri.x];
+    V3f n2 = surf.n[ctri.y];
+    V3f n3 = surf.n[ctri.z];
     float curv = (n1-n2).length2()+(n2-n3).length2()+(n1-n3).length2();
-    points[tri.x].curvature = (points[tri.x].curvature < curv)?curv:points[tri.x].curvature;
-    points[tri.y].curvature = (points[tri.y].curvature < curv)?curv:points[tri.y].curvature;
-    points[tri.z].curvature = (points[tri.z].curvature < curv)?curv:points[tri.z].curvature;
-  };
-  */
+    //setting maximum curvature to the tri's corners
+    points[ctri.x].curvature((points[ctri.x].curvature()<curv)?curv:points[ctri.x].curvature());
+    points[ctri.y].curvature((points[ctri.y].curvature()<curv)?curv:points[ctri.y].curvature());
+    points[ctri.z].curvature((points[ctri.z].curvature()<curv)?curv:points[ctri.z].curvature());
+  };//for(int i = 0; i < .size(); i++)
+  
   
   point_set_property t(points);
 

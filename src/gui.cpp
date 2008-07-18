@@ -152,12 +152,12 @@ void GuiContainer::create(){
   TwDefine(" GLOBAL help='Voxelbrain Voxel editor.' "); // Message added to the help bar.
   TwDefine("Options size='200 600'");
   pnt->tw_pnt = 1.0;
-  TwAddButton(bar, "", load_file, NULL, "label='Load' group=File");
+  TwAddButton(bar, "", load_file, NULL, "label='Load' key='l' group=File");
   TwAddButton(bar, "", save_file, NULL, "label='Save' group=File");
   TwAddButton(bar, "", save_file_as, NULL, "label='Save As' group=File");
   TwAddVarRW(bar, "IO Type", ioType, &pnt->loader.cur_plane, "group=File");
   TwAddVarRW(bar, "", TW_TYPE_DOUBLE, &pnt->tw_pnt, " label='Point size' group=Visualization min=0.2 max=4 step=0.01 keyIncr=d keyDecr=D help='Size of the display points in relation to optimal' ");
-  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_transparency, " label='Transparency' group=Visualization min=0.1 max=1 step=0.01 keyIncr=d keyDecr=D help='Transparency' ");
+  TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_transparency, " label='Transparency' group=Visualization min=0.03 max=1 step=0.01 keyIncr=d keyDecr=D help='Transparency' ");
   pnt->tw_pnt_smooth=true;
   TwAddVarRW(bar, "", TW_TYPE_BOOLCPP, &pnt->tw_pnt_smooth, " label='Smooth points' group=Visualization keyIncr=v keyDecr=V help='Size of the display points. ' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->cur_level, " label='Voxel layer' group=Visualization min=0 max=14 step=1 help='Show underlying layers' ");
@@ -176,7 +176,7 @@ void GuiContainer::create(){
   TwAddVarRW(bar, "", TW_TYPE_FLOAT, &pnt->tw_cursor_depth, " min=0 max=50 step=1 label='Depth (by distance)' group='Cursor' help='How deep cursor goes after an impact.' ");
   pnt->tw_mri_value = 0.0;
   //TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool, " min=0 max=1 step=1 label='Editing mode' help='0-nop, 1-mark seeds.' ");
-  TwAddVarRW(bar, "Mode", modesType, &pnt->tool, " group='Interaction' keyIncr=r keyDecr=t");
+  TwAddVarRW(bar, "Mode", modesType, &pnt->tool, " group='Interaction'");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &pnt->tool_size, " min=1 max=60 step=1 label='Modification area size' group='Interaction' help='Point size' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &threshold, " min=3 max=1000 step=1 label='Prop. threshold' group='Parameters' help='what possible thresholds are avaliable' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &amount, " min=1 max=10 step=1 label='Lookahead' group='Parameters' help='Skip this many voxels in search for suitable areas.' ");
@@ -195,7 +195,7 @@ void GuiContainer::create(){
   TwAddButton(bar, "", reseed, NULL, " label='Init propagation front' group='ROI' ");
   TwAddButton(bar, "", kill_seeds, NULL, " label='Clear propagation front' group='ROI'");
   TwAddButton(bar, "", apply_mask, NULL, " label='Toggle Preview' group='ROI' ");
-  TwAddButton(bar, "", load_file_truth, NULL, " label='Load' group='Ground truth' ");
+  TwAddButton(bar, "", load_file_truth, NULL, " label='Load' key='t' group='Ground truth' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &radius, " min=1 max=60 step=1 label='Modification radius' group='Ground truth' help='The size of the area where we want to grow the truth' ");
   TwAddButton(bar, "", grow_truth, NULL, " label='Grow' group='Ground truth'");
   TwAddButton(bar, "", erode_truth, NULL, " label='Erode' group='Ground truth'");
