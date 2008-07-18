@@ -150,7 +150,7 @@ FastVolume::~FastVolume(){
 void FastVolume::findSurface(std::vector<int> & res, int border){
   cur_gen = 1;
   for(int cur = getOffset(1,1,1); cur < getOffset(255,255,255); cur++){
-    if(vol[cur] < 1)mask[cur] |= ZRO;
+    if(vol[cur] == 0)mask[cur] |= ZRO;
   };
 
   for(int cur = getOffset(1,1,1); cur < getOffset(255,255,255); cur++){

@@ -25,11 +25,12 @@ void GlPoints::set_level(float l){
 
   std::vector<int> scratch;
   while(cur_depth < 15){
+    printf("Found %d points\n", cur.size());
     for( std::vector<int>::iterator i = cur.begin(); i != cur.end(); i++)
       {
 	int cur_idx = *i;
 	if( (cur_idx > 255*255*255) || (cur_idx < 1))continue;
-	if((vol.depth[cur_idx]> cur_depth) && (vol.vol[cur_idx]>=1) && (vol.vol[cur_idx]<=200)   ){
+	if((vol.depth[cur_idx] > (cur_depth)) && (!(vol.mask[cur_idx] & ZRO))){
 	  vol.depth[cur_idx] = cur_depth;
 	  list[cur_depth].push_back(cur_idx);
 	  for(int i = 0; i < 6; i++){
