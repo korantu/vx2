@@ -320,6 +320,62 @@ inline float interpolate_lookup(V3f v, GlPoints & pnt, lookup_type what){
   return total / total_distance;
 };
 
+struct point_property{
+  float param[5];
+  enum {
+    CONFIGURATION = 0,
+    DEPTH,
+    CURVATURE,
+    GRADIENT,
+    INTENSITY,
+    LAST_PARAM
+  };
+};
+
+
+
+struct point_set_property{
+  point_property min;
+  point_property max;
+  
+  const static float EPSILON = 0.00001; /// epsilon for properties
+
+  //find min and max
+  point_set_property(const vector<point_property> & in){
+    for(int i = 0; i < point_property::LAST_PARAM; i++){
+      min.param[i] = 1000.0f;
+      max.param[i] = -1000.0f;
+    };
+
+    for(vector<point_property>::const_iterator cur_property = in.begin(); 
+	cur_property != in.end(); 
+	cur_property++){
+      for(int i = 0; i < point_property::LAST_PARAM; i++){
+	if(cur_property->param[i] < min.param[i])min.param[i] = cur_property->param[i];
+	if(cur_property->param[i] > max.param[i])max.param[i] = cur_property->param[i];	
+      };
+    };
+  };
+  
+  //scale all parametes in the range [0..1]
+  void scale(point_property & in){
+    for(int i = 0; i < point_property::LAST_PARAM; i++){
+      if(max.param[i] - min.param[i] > EPSILON){
+      in.param[i] = (in.param[i]-min.param[i])/(max.param[i]-min.param[i]);
+      };
+    };
+  };
+};
+
+//returns color from point property and point set property
+V3f analyze_point(const point_property & in, point_set_property & t){
+  //  V3f c(in.configuration, in.gradient, in.intensity);
+
+  V3f c(1.0, 0.0, 0.0);
+  return c*(1.0f-in.param[point_property::DEPTH]) + \
+         V3f(0.7, 0.7, 0.7)*in.param[point_property::DEPTH];
+};
+
 void analyze_surface(Surface & surf,
 		     GlPoints & pnt){
   surf.c.clear(); // remove all previous analysis
@@ -327,41 +383,57 @@ void analyze_surface(Surface & surf,
   V3f n, v;
   float depth;
   float v0, vup, vdown;
+  vector<point_property> points;
 
-  //each vertex
+
+  //each vertex, determining configuration and gradient first.
   for(int i = 0; i < surf.v.size(); i++){
     v = surf.v[i];
     n = surf.n[i];
     n /= n.length();
-    
-    V3f c(0.7f, 0.7f, 0.7f);
-    
+
+    point_property cur_point;
 
     //can do the lookup directly, as well. no hits in quality or performance
     depth = interpolate_lookup(v, pnt, LOOKUP_DEPTH);
     if(depth > 10.0) depth = 10.0f; depth = depth/10.0f;
 
-    v0 =   interpolate_lookup(v, pnt, LOOKUP_VALUE);
-    vup =   interpolate_lookup(v+n*2, pnt, LOOKUP_VALUE);
-    vdown =   interpolate_lookup(v-n*2, pnt, LOOKUP_VALUE);
-    int determinator = ((vup < v0)?0:2)+((v0 < vdown)?0:1);
-    V3f cols[4] = {V3f(1.0, 0.0, 1.0), V3f(0.0, 0.0, 1.0),
-                V3f(1.0, 0.0, 0.0), V3f(0.0, 1.0, 0.0)};
-
-    float diff = (fabs(vup-v0)+fabs(vdown-v0))/10.0f;
-    float intensity = (vup+v0+vdown)/100.0f;
-    //diff /= 20;
-
-    /***
-	color intensity is proportional to the value,
-	inversely proportional to difference
-	and fades out to gray with depth 
-     ***/
-
-    c = cols[determinator]/diff*intensity*(1.0-depth)+V3f(0.7f, 0.7f, 0.7f)*depth;
+    v0 =   interpolate_lookup(v+n, pnt, LOOKUP_VALUE);
+    vup =   interpolate_lookup(v, pnt, LOOKUP_VALUE);
+    vdown =   interpolate_lookup(v-n, pnt, LOOKUP_VALUE);
     
-    surf.c.push_back(c); 
+    if((vup < v0) && (v0 < vdown))cur_point.param[point_property::CONFIGURATION] = 0;
+    if((vup > v0) && (v0 < vdown))cur_point.param[point_property::CONFIGURATION] = 1;
+    if((vup < v0) && (v0 > vdown))cur_point.param[point_property::CONFIGURATION] = 2;
+    if((vup > v0) && (v0 > vdown))cur_point.param[point_property::CONFIGURATION] = 3;
+
+    cur_point.param[point_property::GRADIENT] = (fabs(vup-v0)+fabs(vdown-v0));
+    cur_point.param[point_property::INTENSITY] = v0;
+    cur_point.param[point_property::DEPTH] = depth;
+    cur_point.param[point_property::CURVATURE] = 0.0f;
+
+    points.push_back(cur_point);
+    //    c = cols[determinator]/diff*intensity*(1.0-depth)+V3f(0.7f, 0.7f, 0.7f)*depth;
+  }; //for(int i = 0; i < surf.v.size(); i++)
+  /*
+  for(int i = 0; i < .size(); i++){
+    V3i tri = surf.tris[i];
+    V3f n1 = surf.n[tri.x];
+    V3f n2 = surf.n[tri.y];
+    V3f n3 = surf.n[tri.z];
+    float curv = (n1-n2).length2()+(n2-n3).length2()+(n1-n3).length2();
+    points[tri.x].curvature = (points[tri.x].curvature < curv)?curv:points[tri.x].curvature;
+    points[tri.y].curvature = (points[tri.y].curvature < curv)?curv:points[tri.y].curvature;
+    points[tri.z].curvature = (points[tri.z].curvature < curv)?curv:points[tri.z].curvature;
   };
+  */
+  
+  point_set_property t(points);
+
+  for(vector<point_property>::iterator i = points.begin(); i != points.end(); i++){
+    surf.c.push_back(analyze_point(*i, t)); 
+  };
+
 
 };
 
