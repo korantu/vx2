@@ -11,10 +11,12 @@ A file for surface manipulation;
 #include <io.h>
 #define OPEN _open
 #define READ _read
+#define CLOSE _close
 #define BIGENDIAN
 #else
 #define OPEN open
 #define READ read
+#define CLOSE close
 #endif
 vector<Surface> __surfaces;
 
@@ -50,12 +52,12 @@ bool read_surface_binary(Surface & surf, std::string name){
   unsigned char buf[1000]; //for data
   bool result = true;
   
-  int file = OPEN(name.c_str(), O_RDONLY, 0);
+  int file = OPEN(name.c_str(), O_RDONLY | O_BINARY, 0);
   if(file < 0) return false; //cannot open file.
 
   try {
-    buf[0]=0; read(file, (void *)(buf), 3);
-    if(buf[0]==0xff & buf[1]==0xff & buf[2]==0xfe ){
+    buf[0]=0; READ(file, (void *)(buf), 3);
+    if((buf[0]==0xff) && (buf[1]==0xff) && (buf[2]==0xfe) ){
       printf("Format indicator matches.");
     }else{
       throw "Incorrect file";
@@ -66,7 +68,7 @@ bool read_surface_binary(Surface & surf, std::string name){
     
     while((check = READ(file, (void *) buf, 1)) > 0){
       if(buf[0] == 0x0a){ //check if another one is behind; if so - done.
-	read(file, (void *) buf, 1);
+	READ(file, (void *) buf, 1);
 	  if(buf[0] == 0x0a)break;
       };
     };
@@ -80,7 +82,7 @@ bool read_surface_binary(Surface & surf, std::string name){
   //reading points and pushing normals
   for(int i = 0; i < points; i++){
     V3f in;
-    int dummy;
+//    int dummy;
     in.x = read_float(file);
     in.y = read_float(file);
     in.z = read_float(file);
@@ -92,7 +94,7 @@ bool read_surface_binary(Surface & surf, std::string name){
   };
 
   for(int i = 0; i < tris; i++){
-    int a, b, c, zero; 
+    int a, b, c;//, zero; 
     a = 0;
     b = 0;
     c = 0;
@@ -117,7 +119,7 @@ bool read_surface_binary(Surface & surf, std::string name){
     result = false;
   };
 
-  close(file);
+  CLOSE(file);
 
   for(unsigned int i = 0; i < surf.n.size(); i++){
     V3f n = surf.n[i];
@@ -352,7 +354,7 @@ struct point_set_property{
   point_property min;
   point_property max;
   
-  const static float EPSILON = 0.00001; /// epsilon for properties
+  static const float EPSILON;// = 0.00001; /// epsilon for properties
 
   //find min and max
   point_set_property(const vector<point_property> & in){
@@ -385,15 +387,17 @@ struct point_set_property{
   };
 };
 
+const float point_set_property::EPSILON = 0.00001f;
+
 //returns color from point property and point set property
 V3f analyze_point(const point_property & in, point_set_property & t){
   
-  V3f background(0.7, 0.7, 0.7);
+  V3f background(0.7f, 0.7f, 0.7f);
   if(in.depth() > 0.9f) return background;
 
 
   //  V3f c(in.configuration(), in.gradient(), in.intensity());
-  V3f c((in.configuration() < 0.5 || (in.configuration() > 0.5 && in.configuration() < 0.75))?1:0, 0.3*in.curvature(), (in.intensity_per_gradient()));
+  V3f c((in.configuration() < 0.5f || (in.configuration() > 0.5f && in.configuration() < 0.75f))?1.0f:0.0f, 0.3f*in.curvature(), (in.intensity_per_gradient()));
    return c*(1.0f-in.depth())+ background*in.depth();
 };
 
@@ -408,7 +412,7 @@ void analyze_surface(Surface & surf,
 
 
   //each vertex, determining configuration and gradient first.
-  for(int i = 0; i < surf.v.size(); i++){
+  for(size_t i = 0; i < surf.v.size(); i++){
     v = surf.v[i];
     n = surf.n[i];
     n /= n.length();
@@ -417,6 +421,7 @@ void analyze_surface(Surface & surf,
 
     //can do the lookup directly, as well. no hits in quality or performance
     depth = interpolate_lookup(v, pnt, LOOKUP_DEPTH);
+	if(depth > 255.0f)depth=0.0f;
     depth = depth/10.0f;
     cur_point.param[point_property::DEPTH] = depth;
     if(depth > 1.0){
@@ -426,6 +431,9 @@ void analyze_surface(Surface & surf,
     v0 =   interpolate_lookup(v+n, pnt, LOOKUP_VALUE);
     vup =   interpolate_lookup(v, pnt, LOOKUP_VALUE);
     vdown =   interpolate_lookup(v-n, pnt, LOOKUP_VALUE);
+
+	vup+=v0*0.1;
+	vdown-=v0*0.1;
     
     if((vup < v0) && (v0 < vdown))cur_point.configuration(0.0f);
     if((vup > v0) && (v0 < vdown))cur_point.configuration(1.0f);
@@ -444,7 +452,7 @@ void analyze_surface(Surface & surf,
   }; //for(int i = 0; i < surf.v.size(); i++)
   
   //curvature
-  for(int i = 0; i < surf.tri.size(); i++){
+  for(size_t i = 0; i < surf.tri.size(); i++){
   
     V3i ctri = surf.tri[i];
 

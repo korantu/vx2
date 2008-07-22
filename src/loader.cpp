@@ -207,7 +207,7 @@ void Loader::parse(raw data, FastVolume & result, bool read){
   int pos = 0; //current read position
 
   int   /*start_frame, end_frame,*/ width, height, depth, nframes, type, x, y, z,
-    /*bpv,*/ dof, /*bytes, version, ival,*/ unused_space_size, good_ras_flag, i ;
+    /*bpv,*/ dof, /*bytes, version, ival,*/ unused_space_size, good_ras_flag/*, i*/ ;
   //char   unused_buf[UNUSED_SPACE_SIZE+1] ;
   float  /*fval,*/ xsize, ysize, zsize, x_r, x_a, x_s, y_r, y_a, y_s,
     z_r, z_a, z_s, c_r, c_a, c_s ;

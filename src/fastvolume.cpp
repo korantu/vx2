@@ -445,7 +445,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
     for(std::vector<step>::iterator i = steps.begin(); i != steps.end(); i++){
       step the_step = *i;
       float delta =  (float)ABS(vol[the_step.to]-vol[the_step.from]);
-      if(delta > max_delta)max_delta = delta;
+      if(delta > max_delta)max_delta = (int)delta;
     };
 
     for(std::vector<step>::iterator i = steps.begin(); i != steps.end(); i++){
@@ -499,7 +499,7 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
     int cnt = 0;
 
     //everyone below the limit pass. 
-    float current_limit = max-(max-min)*0.1;
+    float current_limit = max-(max-min)*0.1f;
 
     printf("Current limit is %f \n", current_limit);
 
