@@ -186,6 +186,7 @@ struct main_module : public gl_wrapper_reciever {
 
       render_required = false;
       st.interface_updated = false;
+	  glfwSwapBuffers(); //definitely did this before; check GIT...
     }else{
       //do nothing; 
     };
@@ -532,7 +533,8 @@ int main(int argc, char ** argv)
   while( glfwGetWindowParam(GLFW_OPENED) && !glfwGetKey(GLFW_KEY_ESC) )
     {
       core.draw();
-      glfwSwapBuffers();
+     // glfwSwapBuffers(); #seems like I have already deleted it..?
+	  glfwPollEvents();	
       glfwSleep(0.02);
     }
 
