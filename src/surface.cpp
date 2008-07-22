@@ -397,7 +397,8 @@ V3f analyze_point(const point_property & in, point_set_property & t){
 
 
   //  V3f c(in.configuration(), in.gradient(), in.intensity());
-  V3f c((in.configuration() < 0.5f || (in.configuration() > 0.5f && in.configuration() < 0.75f))?1.0f:0.0f, 0.3f*in.curvature(), (in.intensity_per_gradient()));
+  float alert = (in.configuration() < 0.5f || (in.configuration() > 0.5f && in.configuration() < 0.75f))?1.0f:0.0f; 
+  V3f c(alert, 0.3f*in.curvature(), (in.intensity_per_gradient())/(1.0f+alert*100.0f));
    return c*(1.0f-in.depth())+ background*in.depth();
 };
 
@@ -428,12 +429,12 @@ void analyze_surface(Surface & surf,
       //do nothing, really.
       depth = 1.1f;
     }else{ //ok, shallow, makes sense to process
-    v0 =   interpolate_lookup(v+n, pnt, LOOKUP_VALUE);
-    vup =   interpolate_lookup(v, pnt, LOOKUP_VALUE);
+    v0 =   interpolate_lookup(v, pnt, LOOKUP_VALUE);
+    vup =   interpolate_lookup(v+n, pnt, LOOKUP_VALUE);
     vdown =   interpolate_lookup(v-n, pnt, LOOKUP_VALUE);
 
-	vup+=v0*0.1;
-	vdown-=v0*0.1;
+	vup-=v0*0.15f;
+	vdown+=v0*0.15f;
     
     if((vup < v0) && (v0 < vdown))cur_point.configuration(0.0f);
     if((vup > v0) && (v0 < vdown))cur_point.configuration(1.0f);
