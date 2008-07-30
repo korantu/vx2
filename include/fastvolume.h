@@ -124,6 +124,23 @@ class FastVolume {
   // static inline void iterate(Iterator &);
   void raster( V3f o, V3f dx, V3f dy, int w, int h, unsigned char * buf, ColorMapper & mapper, int zoom = 1, bool show_mask = true);
 
+  ///undo facilities
+  /// buffer for the new undo infrastructure; test it with undoing truths modifications first.
+std::vector<int> undo_buffer_multi;
+
+///what kind of actions are representyed in the undo stack.
+enum undo_actions {
+	ADD_MASK = 0, //add mask (kill mask and seeds, not touching ground truth if undone)
+	ADD_TRU,      //add ground truth (kill if undone)
+	KILL_TRU,      //kill ground truth (add if undone)
+	MAX_ACTION
+};
+
+//query if the following thing is an action or a position
+	bool is_action(int in);
+	bool push_undo_action(int pos, undo_actions act, bool start_new = false);
+	void undo_action(); ///undoes several similar actions	
+
 };
 
 

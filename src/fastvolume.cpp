@@ -18,7 +18,92 @@ const int FastVolume::neighbours[26] = {
   -dx-dy-dz
 };
 
+
+///undo stack
+///P - a position
+///A - action
+/// stack's last item is an action. 
+/// when we want to store a part of undo action,
+/// the last part is popped out.
 std::vector<int> undo_buffer;
+
+//query if the following thing is an action or a position
+bool FastVolume::is_action(int in){
+	return ((in >= 0) && (in < (int)MAX_ACTION));
+};
+
+bool FastVolume::push_undo_action(int pos, undo_actions act, bool start_new){
+	if(undo_buffer_multi.size() == 0)start_new = true; //we are starting anew
+	//if we are not starting a new chunk move marker to the back.
+	if((!start_new) && (undo_buffer_multi.back() == act))undo_buffer_multi.pop_back();
+		undo_buffer_multi.push_back(pos);
+		undo_buffer_multi.push_back(act);
+};
+
+void FastVolume::undo_action(){
+	if(undo_buffer_multi.size() == 0)return;
+//	assert(is_action(undo_buffer_multi.back()));
+	undo_actions the_action = (undo_actions)undo_buffer_multi.back();
+	undo_buffer_multi.pop_back();
+	int pos; //current undo voxel index
+	while(!is_action(pos = undo_buffer_multi.back())){ //until it is a valid position
+		undo_buffer_multi.pop_back();
+
+		/// main undo switch; mostly implements truth so far
+		switch(the_action){
+			case ADD_TRU:
+				mask[pos] -= TRU & mask[pos];
+				break;
+			case KILL_TRU:
+				mask[pos] |= TRU;
+				break;
+
+		};
+		if(undo_buffer_multi.size() == 0) break; //nothing to undo so far;
+	};
+};	
+
+/// eraze an element from a list.
+inline bool erase(std::vector<int> & where, int what){
+  for(std::vector<int>::iterator i = where.begin(); i != where.end(); i++){
+    if(what == *i){
+      where.erase( i);
+      return true;
+    };
+  };
+
+  return false;
+};
+
+
+// undo.
+void FastVolume::undo(){
+
+  while(undo_buffer.size() && !(undo_buffer.back()))
+    undo_buffer.pop_back();
+
+  int cur;
+  //undo until a zero
+  while(undo_buffer.size() && undo_buffer.back()){
+    cur = undo_buffer.back();
+    undo_buffer.pop_back();
+    if(BDR & mask[cur]){ //possibly marked
+		while(erase(markers, cur)){}; //make sure it is not in the markers 
+    }
+    mask[cur] -= (mask[cur] & MASK); //clear the thing itself
+    
+    for(int i = 0; i < 6; i++){
+      int cur_nbr = cur+neighbours[i];
+      if((MSK & mask[cur_nbr]) && !(BDR & mask[cur_nbr])){ //if not marked
+	mask[cur_nbr] |= BDR;     //mark
+	markers.push_back(cur_nbr);
+      };
+    };
+
+  };
+  
+
+};
 
 
 FastVolume::FastVolume()
@@ -241,7 +326,6 @@ void FastVolume::add_point(V3f &pnt){
 };
 */
 
-//here we add tools; to be replaced with proper structures
 void FastVolume::use_tool(int idx, int what, int sz){
 
   int x, y, z;
@@ -250,7 +334,9 @@ void FastVolume::use_tool(int idx, int what, int sz){
   if(!what)return;
 
   getCoords(idx, x,y,z);
-  x-=sz/2; y-=sz/2; z-=sz/2;    
+  x-=sz/2; y-=sz/2; z-=sz/2; 
+
+  /// a tool is applied in 3d box [sz x sz x sz]
   for(int xi = x; xi < x+sz; xi++)
     for(int yi = y; yi < y+sz; yi++)
       for(int zi = z; zi < z+sz; zi++){
@@ -285,9 +371,9 @@ void FastVolume::use_tool(int idx, int what, int sz){
 	case 5: //clean everything
 	  mask[c] -= ((MASK | TRU) & mask[c]); break;
 	};
-      };
+	  if(what == 1) undo_buffer.push_back(c);
+  };
 
-  if(what == 1) undo_buffer.push_back(c);
 };
 
 bool lookahead(FastVolume * in, std::vector<int> &res, int start, int dir, int amount, int cur_gen){
@@ -591,62 +677,6 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
 
 };
 
-inline bool erase(std::vector<int> & where, int what){
-  for(std::vector<int>::iterator i = where.begin(); i != where.end(); i++){
-    if(what == *i){
-      where.erase( i);
-      return true;
-    };
-  };
-
-  return false;
-};
-
-void FastVolume::undo(){
-  /*  for(int i = getOffset(1,1,1); i < getOffset(255,255,255); i++){
-    if((mask[i] & MASK))printf("%d gen, while cur. gen %d\n", GEN(mask[i]), cur_gen);
-    if((mask[i] & MASK) && ((GEN(mask[i])) >= cur_gen)){ 
-      mask[i]=(FLAGS & (mask[i]-(mask[i] & MASK)));
-      printf(".\n");
-    };
-  };//each point  
-
-  //if(cur_gen > 1)cur_gen--;
-  */
-
-  //uncover something to undo, first - skip to zeroes
-
-  while(undo_buffer.size() && !(undo_buffer.back()))
-    undo_buffer.pop_back();
-
-  int cur;
-  //undo until a zero
-  while(undo_buffer.size() && undo_buffer.back()){
-    cur = undo_buffer.back();
-    undo_buffer.pop_back();
-    if(BDR & mask[cur]){ //possibly marked
-      while(erase(markers, cur)){}; //make sure it is not in the markers 
-    }
-    mask[cur] -= (mask[cur] & MASK); //clear the thing itself
-    
-    for(int i = 0; i < 6; i++){
-      int cur_nbr = cur+neighbours[i];
-      if((MSK & mask[cur_nbr]) && !(BDR & mask[cur_nbr])){ //if not marked
-	mask[cur_nbr] |= BDR;     //mark
-	markers.push_back(cur_nbr);
-      };
-    };
-
-  };
-  
-  //  put everything around into the markers; stupid but should work.
-  //possibly even fast enough.
-  
-
-  //markers.clear();
-  //reseed();
-
-};
 /*
 void FastVolume::downshift(int flags = MASK){
   for(int i = getOffset(1,1,1); i < getOffset(255,255,255); i++){
