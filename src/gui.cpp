@@ -467,6 +467,8 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
   };
 
   int depth = 1000;
+  
+  v.undo_buf.push_back(FastVolume::KILL_TRU); //gonna kill some truth...
 
   //what is the least deep part
   for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
@@ -481,8 +483,10 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
     for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
       for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
-	if(v.depth[offset] == depth)
+	if(v.depth[offset] == depth){
 	  v.mask[offset] -= (TRU & v.mask[offset]);
+	  v.undo_buf.push_back(offset);
+	};
       };
 };
 
@@ -677,7 +681,7 @@ void TW_CALL GuiContainer::step_all( void * UserData){
 
 
 void TW_CALL GuiContainer::undo( void *){
-  the_gui->pnt->vol.undo();
+  the_gui->pnt->vol.undo_action();
   the_gui->pnt->vol.updated = true;
   the_gui->pnt->update(); //and make sure all is shown up.....
 };

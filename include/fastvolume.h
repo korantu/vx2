@@ -126,7 +126,7 @@ class FastVolume {
 
   ///undo facilities
   /// buffer for the new undo infrastructure; test it with undoing truths modifications first.
-std::vector<int> undo_buffer_multi;
+std::vector<int> undo_buf;
 
 ///what kind of actions are representyed in the undo stack.
 enum undo_actions {
@@ -138,8 +138,8 @@ enum undo_actions {
 
 //query if the following thing is an action or a position
 	bool is_action(int in);
-	bool push_undo_action(int pos, undo_actions act, bool start_new = false);
 	void undo_action(); ///undoes several similar actions	
+	void push_undo_item(int in);
 
 };
 

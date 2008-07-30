@@ -32,39 +32,37 @@ bool FastVolume::is_action(int in){
 	return ((in >= 0) && (in < (int)MAX_ACTION));
 };
 
-bool FastVolume::push_undo_action(int pos, undo_actions act, bool start_new){
-	if(undo_buffer_multi.size() == 0)start_new = true; //we are starting anew
-	//if we are not starting a new chunk move marker to the back.
-	if((!start_new) && (undo_buffer_multi.back() == act))undo_buffer_multi.pop_back();
-		undo_buffer_multi.push_back(pos);
-		undo_buffer_multi.push_back(act);
-};
-
 void FastVolume::undo_action(){
-	if(undo_buffer_multi.size() == 0)return;
-//	assert(is_action(undo_buffer_multi.back()));
-	undo_actions the_action = (undo_actions)undo_buffer_multi.back();
-	undo_buffer_multi.pop_back();
-	int pos; //current undo voxel index
-	while(!is_action(pos = undo_buffer_multi.back())){ //until it is a valid position
-		undo_buffer_multi.pop_back();
-
-		/// main undo switch; mostly implements truth so far
-		switch(the_action){
-			case ADD_TRU:
-				mask[pos] -= TRU & mask[pos];
-				break;
-			case KILL_TRU:
-				mask[pos] |= TRU;
-				break;
-
-		};
-		if(undo_buffer_multi.size() == 0) break; //nothing to undo so far;
-	};
+  if(undo_buf.size() == 0)return;
+  //	assert(is_action(undo_buffer_multi.back()));
+  int pos; //current position; last one is an action.
+  std::vector<int> list;
+  
+  //search until an action.
+  while(undo_buf.size() > 0){
+    pos = undo_buf.back();
+    undo_buf.pop_back();
+    if(is_action(pos)){ //ok, found what to do;
+      break; 
+    }else{              //not action yet; just remember it
+      list.push_back(pos); //remember
+    };
+  };
+  
+  for(std::vector<int>::iterator i = list.begin(); i != list.end(); i++){
+    switch(pos){
+    case ADD_TRU:
+      mask[*i] -= TRU & mask[*i];
+      break;
+    case KILL_TRU:
+      mask[*i] |= TRU;
+      break;  
+    };
+  };
 };	
 
 /// eraze an element from a list.
-inline bool erase(std::vector<int> & where, int what){
+inline bool erase_element(std::vector<int> & where, int what){
   for(std::vector<int>::iterator i = where.begin(); i != where.end(); i++){
     if(what == *i){
       where.erase( i);
@@ -88,7 +86,7 @@ void FastVolume::undo(){
     cur = undo_buffer.back();
     undo_buffer.pop_back();
     if(BDR & mask[cur]){ //possibly marked
-		while(erase(markers, cur)){}; //make sure it is not in the markers 
+		while(erase_element(markers, cur)){}; //make sure it is not in the markers 
     }
     mask[cur] -= (mask[cur] & MASK); //clear the thing itself
     
@@ -158,6 +156,7 @@ void FastVolume::reset(){
   markers.clear();
   cur_gen=1;
   undo_buffer.clear();
+  undo_buf.clear();
 };
 
 void FastVolume::reseed(){
