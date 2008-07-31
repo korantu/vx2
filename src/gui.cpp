@@ -475,7 +475,12 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 };
 
 void do_erode_truth(FastVolume & v, V3f where, int radius){
-  for(int i = 0; i <3; i++){
+
+	//unmarking
+  for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
+	unmark(*i, the_gui->pnt->cursor, the_gui->radius);
+
+	for(int i = 0; i <3; i++){
     radius = (where[i]+radius > 255)?255-(int)where[i]:radius;
     radius = (where[i]-radius < 1)?((int)where[i]-1):radius;
     if(radius < 0)radius = 0;
@@ -509,6 +514,7 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 
 void TW_CALL GuiContainer::grow_truth( void * UserData){
   do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
+//unmarking
   for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
 	unmark(*i, the_gui->pnt->cursor, the_gui->radius);
   the_gui->pnt->vol.updated = true;
