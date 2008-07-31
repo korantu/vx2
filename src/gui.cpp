@@ -483,11 +483,14 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 	int offset = v.getOffset(x,y,z);
 	if(v.depth[offset] == depth)
 	  v.mask[offset] -= (TRU & v.mask[offset]);
+	  v.push_undo_action(offset, FastVolume::undo_actions::KILL_TRU);
       };
 };
 
 void TW_CALL GuiContainer::grow_truth( void * UserData){
   do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
+  for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
+	unmark(*i, the_gui->pnt->cursor, the_gui->radius);
   the_gui->pnt->vol.updated = true;
   the_gui->sl->update();
   the_gui->pnt->update(); //and make sure all is shown up.....

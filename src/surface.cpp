@@ -529,6 +529,13 @@ void rasterize_surface(Surface & surf,
 };
   
 };
-//**//
+//* change color of already marked regions*//
 
+void unmark(Surface & in, V3f where, float radius){
+	for(int i = 0; i < in.v.size(); i++){
+		if((in.v[i] - where).length() < radius){
+			in.c[i].x = 0.0;
+		};
+	};
+};
 

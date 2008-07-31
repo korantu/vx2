@@ -27,6 +27,9 @@ struct Surface{
   
 };
 
+//make a radius of uniform color
+void unmark(Surface &, V3f where, float radius);
+
 int surface_tris(Surface &);
 void surface_points(int n, int &, int &, int &);
 /// sort triangles in a direction

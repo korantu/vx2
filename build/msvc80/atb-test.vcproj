@@ -221,10 +221,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\surface.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\v3tools.cpp"
 				>
 			</File>
@@ -288,6 +284,10 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\surface.h"
 				>
 			</File>
 			<File
