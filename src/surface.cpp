@@ -45,6 +45,10 @@ float read_float(int fd){
 };
 
 //TODO: unify read_surface_binary
+///MSVC leftover.
+#ifndef O_BINARY
+#define O_BINARY 0x0
+#endif
 
 bool read_surface_binary(Surface & surf, std::string name){
   int points;     //for the number of points

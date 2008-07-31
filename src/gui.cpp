@@ -430,7 +430,20 @@ void read_voxels(std::string in, GlPoints * pnt, bool _half = false, bool _tru =
   
 };
 
+//add depth close to the sides of the region; should be nice 
+int more_depth(int x, int y, int z, V3f w, int r){
+  V3f cur(((float)x-w.x)/(float)r,
+	  ((float)y-w.y)/(float)r,
+	  ((float)z-w.z)/(float)r);
+
+  return (int)(cur.length2()*3);
+};
+
 void do_grow_truth(FastVolume & v, V3f where, int radius){
+  //we are going to push undo stuff.
+  v.undo_buf.push_back(FastVolume::ADD_TRU); //gonna kill some truth...
+
+
   for(int i = 0; i <3; i++){
     radius = (where[i]+radius > 255)?255-(int)(where[i]):radius;
     radius = (where[i]-radius < 1)?((int)where[i]-1):radius;
@@ -448,6 +461,7 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 	  };
 	};
       };
+
   for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
     for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
       for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
@@ -455,6 +469,7 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 	if(v.mask[offset] & AUX){
 	  v.mask[offset] -= AUX;
 	  v.mask[offset] |= TRU;
+	  v.undo_buf.push_back(offset); //adding the voxel to undo.
 	};
       };
 };
@@ -467,6 +482,8 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
   };
 
   int depth = 1000;
+  
+  v.undo_buf.push_back(FastVolume::KILL_TRU); //gonna kill some truth...
 
   //what is the least deep part
   for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
@@ -474,17 +491,20 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
       for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
 	if(v.mask[offset] & TRU){
-	  if(depth > v.depth[offset])depth = v.depth[offset];
+	  //offset
+	  if(depth > (v.depth[offset]+more_depth(x,y,z, where, radius)))
+	     depth = v.depth[offset]+more_depth(x,y,z, where, radius);
 	};
       };
   for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
     for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
       for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
-	if(v.depth[offset] == depth)
+	if((v.mask[offset] & TRU) && (v.depth[offset]+more_depth(x,y,z, where, radius) == depth)){
 	  v.mask[offset] -= (TRU & v.mask[offset]);
-	  v.push_undo_action(offset, FastVolume::undo_actions::KILL_TRU);
-      };
+	  v.undo_buf.push_back(offset);
+	};
+	  };
 };
 
 void TW_CALL GuiContainer::grow_truth( void * UserData){
@@ -680,7 +700,7 @@ void TW_CALL GuiContainer::step_all( void * UserData){
 
 
 void TW_CALL GuiContainer::undo( void *){
-  the_gui->pnt->vol.undo();
+  the_gui->pnt->vol.undo_action();
   the_gui->pnt->vol.updated = true;
   the_gui->pnt->update(); //and make sure all is shown up.....
 };

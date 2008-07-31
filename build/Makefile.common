@@ -24,6 +24,7 @@ VX2_SRC := ../../src/v3tools.cpp \
 	../../src/color.cpp \
 	../../src/surface.cpp \
 	../../src/macosx.cpp \
+	../../src/vx2.cpp \
 	../../src/gui.cpp 
 
 #build dependencies using g++
@@ -31,7 +32,7 @@ deps: $(VX2_SRC) vx2.cpp
 	$(CXX) $(CXXFLAGS) -M $(VX2_SRC) vx2.o > deps.txt
 
 #vx2 main build taret.
-vx2: $(VX2) tags
+vx2: $(VX2) vx2.o tags
 	$(CXX) $(VX2) vx2.o $(LINKFLAGS) -o vx2
 
 t: $(VX2) t.o tags
