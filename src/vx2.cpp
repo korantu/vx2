@@ -80,6 +80,9 @@ struct main_module : public gl_wrapper_reciever {
   };
 
   void do_resize(){
+	  ///sanity check:
+		if(st.width < 10 || st.width > 2000)return;
+		if(st.height < 10 || st.height > 2000)return;
     render_required = true;
     printf("resz: w:%d; h:%d\n", st.width, st.height);
     crossection.resize_screen(st.width, st.height);
