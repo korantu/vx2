@@ -27,6 +27,19 @@ const int FastVolume::neighbours[26] = {
 /// the last part is popped out.
 std::vector<int> undo_buffer;
 
+/// eraze an element from a list. (TODO: check if it can be replaced with a standard STL algorithm)
+inline bool erase_element(std::vector<int> & where, int what){
+  for(std::vector<int>::iterator i = where.begin(); i != where.end(); i++){
+    if(what == *i){
+      where.erase( i);
+      return true;
+    };
+  };
+
+  return false;
+};
+
+
 //query if the following thing is an action or a position
 bool FastVolume::is_action(int in){
 	return ((in >= 0) && (in < (int)MAX_ACTION));
@@ -49,29 +62,38 @@ void FastVolume::undo_action(){
     };
   };
   
-  for(std::vector<int>::iterator i = list.begin(); i != list.end(); i++){
-    switch(pos){
-    case ADD_TRU:
-      mask[*i] -= TRU & mask[*i];
+  int cur; //current point 
+  int cur_nbr; //current neighbour
+  int i;
+
+  for(std::vector<int>::iterator j = list.begin(); j != list.end(); j++){
+    cur = *j;
+	switch(pos){
+
+	case ADD_MASK: //need to remove mask
+    if(BDR & mask[cur]){ //possibly marked
+		while(erase_element(markers, cur)){}; //make sure it is not in the markers 
+    }
+    mask[cur] -= (mask[cur] & MASK); //clear the thing itself
+    
+    for(i = 0; i < 6; i++){
+      cur_nbr = cur+neighbours[i];
+      if((MSK & mask[cur_nbr]) && !(BDR & mask[cur_nbr])){ //if not marked
+	mask[cur_nbr] |= BDR;     //mark
+	markers.push_back(cur_nbr);
+	  };
+	};
+	case ADD_TRU:
+      mask[cur] -= TRU & mask[cur];
       break;
+
+
     case KILL_TRU:
-      mask[*i] |= TRU;
+      mask[cur] |= TRU;
       break;  
     };
   };
 };	
-
-/// eraze an element from a list.
-inline bool erase_element(std::vector<int> & where, int what){
-  for(std::vector<int>::iterator i = where.begin(); i != where.end(); i++){
-    if(what == *i){
-      where.erase( i);
-      return true;
-    };
-  };
-
-  return false;
-};
 
 
 // undo.
@@ -311,20 +333,6 @@ void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * b
   };
 };
 
-/* Unused
-
-void FastVolume::add_point(V3f &pnt){
-  int offset = getOffset(pnt.x, pnt.y, pnt.z); 
-  if(BDR & mask[offset])
-    {
-      markers.push_back(offset);
-      undo_buffer.push_back(offset);
-      mask[offset] = BDR | cur_gen;
-    };
-  undo_buffer.push_back(0); 
-};
-*/
-
 void FastVolume::use_tool(int idx, int what, int sz){
 
   int x, y, z;
@@ -370,7 +378,11 @@ void FastVolume::use_tool(int idx, int what, int sz){
 	case 5: //clean everything
 	  mask[c] -= ((MASK | TRU) & mask[c]); break;
 	};
-	  if(what == 1) undo_buffer.push_back(c);
+	if(what == 1) {
+		undo_buffer.push_back(c);
+		undo_buf.push_back(ADD_MASK); //add the point to the undo stack. 
+		undo_buf.push_back(c); 
+	};
   };
 
 };
@@ -391,6 +403,7 @@ bool lookahead(FastVolume * in, std::vector<int> &res, int start, int dir, int a
 
 	  res.push_back(cur);
 	  undo_buffer.push_back(cur);
+	  in->undo_buf.push_back(cur);
 	    };
 	
       };
@@ -412,6 +425,7 @@ bool lookahead_spread(FastVolume * in, std::vector<int> &res, int start, int dir
 	  in->mask[cur] |= BDR;
 	  res.push_back(cur);
 	  undo_buffer.push_back(cur);
+	  in->undo_buf.push_back(cur);
 	};
       };
 
@@ -470,6 +484,8 @@ void FastVolume::set_band(){
 
 void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int times){
 
+
+	undo_buf.push_back(ADD_MASK);
   // cur_gen++;
   int cur, cur_val;//, cursor_idx;
   std::vector<int> res;
@@ -603,8 +619,11 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
       if((!(mask[interesting] & BDR)) /* && in_scope(interesting) */){
 	mask[interesting] |= BDR;
 	res.push_back(interesting);
-	if(go)undo_buffer.push_back(interesting);
-      }; 
+	if(go){
+		undo_buffer.push_back(interesting);
+		undo_buf.push_back(interesting);
+	};	  
+	}; 
 
     };    
 
@@ -616,11 +635,14 @@ void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int ti
 
   if(undo_buffer.size() && undo_buffer.back())undo_buffer.push_back(0);
 
+
   //reseed();  
 };
 
 void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
-  // cur_gen++;
+
+	undo_buf.push_back(ADD_MASK);
+	// cur_gen++;
   int cur, cur_val;//, cursor_idx;
   std::vector<int> res;
   int cur_idx;  
@@ -659,6 +681,7 @@ void FastVolume::propagate(int threshold, int dist, int max_depth, int times){
 	      mask[cur_idx] |= BDR;
 	      res.push_back(cur_idx);
 	      undo_buffer.push_back(cur_idx);
+		  undo_buf.push_back(cur_idx);
 	    };
 	  };
 	};

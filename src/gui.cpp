@@ -478,7 +478,7 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 
 	//unmarking
   for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
-	unmark(*i, the_gui->pnt->cursor, the_gui->radius);
+	unmark(*i, the_gui->pnt->cursor, (float)the_gui->radius);
 
 	for(int i = 0; i <3; i++){
     radius = (where[i]+radius > 255)?255-(int)where[i]:radius;
