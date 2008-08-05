@@ -343,6 +343,9 @@ void FastVolume::use_tool(int idx, int what, int sz){
   getCoords(idx, x,y,z);
   x-=sz/2; y-=sz/2; z-=sz/2; 
 
+  if(what == 1){
+		undo_buf.push_back(ADD_MASK); //add the point to the undo stack. 
+  };
   /// a tool is applied in 3d box [sz x sz x sz]
   for(int xi = x; xi < x+sz; xi++)
     for(int yi = y; yi < y+sz; yi++)
@@ -380,7 +383,6 @@ void FastVolume::use_tool(int idx, int what, int sz){
 	};
 	if(what == 1) {
 		undo_buffer.push_back(c);
-		undo_buf.push_back(ADD_MASK); //add the point to the undo stack. 
 		undo_buf.push_back(c); 
 	};
   };
