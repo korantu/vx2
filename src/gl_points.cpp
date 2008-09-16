@@ -213,10 +213,50 @@ struct compare_tris{
 
 
 void GlPoints::draw(V3f zaxis){
-
   int cursor_size = 10;
   
   int x, y, z; //tmp
+
+
+
+  //if(tw_pnt  0.5)
+  //  glPointSize(pnt);
+  //else
+  float nicety_coefficient = 1.5;
+
+  glPointSize((float)(nicety_coefficient*tw_pnt*pnt));
+
+
+
+
+  //rendering active area first
+  int cur_depth;
+  glPointSize((float)(nicety_coefficient*1.0f*pnt));
+  glBegin(GL_POINTS);
+
+  //markers
+  for(std::vector<int>::iterator i = the_markers.begin(); i != the_markers.end(); i++){
+    cur_depth = vol.depth[*i]; 
+    if(cur_depth < 2)continue; //do not show top layer
+     vol.getCoords(*i, x,y,z);
+     //float pnt_col =  vol.vol[*i]/300.0;
+     glColor3f(cur_depth*20.0f/200.0f, 0.0f, ((200.0f-cur_depth*20.0f)/200.0f));
+     glVertex3i(x,y,z);
+  };
+/*
+  //usual stuff
+  for(std::vector<int>::iterator i = the_marked.begin(); i != the_marked.end(); i++){
+    cur_depth = vol.depth[*i]; 
+    if(cur_depth < 2)continue; //do not show top layer
+     vol.getCoords(*i, x,y,z);
+     //float pnt_col =  vol.vol[*i]/300.0;
+     glColor3f(cur_depth*20.0f/200.0f, (200.0f-cur_depth*20.0f)/200.0f, 0.0f);
+     glVertex3i(x,y,z);
+  };
+*/
+  glEnd();
+
+
 
   ///draw cursor
    glBegin(GL_LINES);
@@ -321,47 +361,6 @@ void GlPoints::draw(V3f zaxis){
   };
   glEnd();
 
-
-  glDisable(GL_DEPTH_TEST);
-
-  //if(tw_pnt  0.5)
-  //  glPointSize(pnt);
-  //else
-  float nicety_coefficient = 1.5;
-
-  glPointSize((float)(nicety_coefficient*tw_pnt*pnt));
-
-
-
-
-  //rendering active area first
-  int cur_depth;
-  glPointSize((float)(nicety_coefficient*1.0f*pnt));
-  glBegin(GL_POINTS);
-
-  //markers
-  for(std::vector<int>::iterator i = the_markers.begin(); i != the_markers.end(); i++){
-    cur_depth = vol.depth[*i]; 
-    if(cur_depth < 2)continue; //do not show top layer
-     vol.getCoords(*i, x,y,z);
-     //float pnt_col =  vol.vol[*i]/300.0;
-     glColor3f(cur_depth*20.0f/200.0f, 0.0f, ((200.0f-cur_depth*20.0f)/200.0f));
-     glVertex3i(x,y,z);
-  };
-/*
-  //usual stuff
-  for(std::vector<int>::iterator i = the_marked.begin(); i != the_marked.end(); i++){
-    cur_depth = vol.depth[*i]; 
-    if(cur_depth < 2)continue; //do not show top layer
-     vol.getCoords(*i, x,y,z);
-     //float pnt_col =  vol.vol[*i]/300.0;
-     glColor3f(cur_depth*20.0f/200.0f, (200.0f-cur_depth*20.0f)/200.0f, 0.0f);
-     glVertex3i(x,y,z);
-  };
-*/
-  glEnd();
-
-  glEnable(GL_DEPTH_TEST);
   
   glDepthMask(GL_TRUE);
   

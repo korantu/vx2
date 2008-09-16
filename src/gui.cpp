@@ -441,8 +441,6 @@ int more_depth(int x, int y, int z, V3f w, int r){
 
 void do_grow_truth(FastVolume & v, V3f where, int radius){
   //we are going to push undo stuff.
-  v.undo_buf.push_back(FastVolume::ADD_TRU); //gonna kill some truth...
-
 
   for(int i = 0; i <3; i++){
     radius = (where[i]+radius > 255)?255-(int)(where[i]):radius;
@@ -468,10 +466,11 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 	int offset = v.getOffset(x,y,z);
 	if(v.mask[offset] & AUX){
 	  v.mask[offset] -= AUX;
-	  v.mask[offset] |= TRU;
-	  v.undo_buf.push_back(offset); //adding the voxel to undo.
-	};
+	  v.record_operation(offset, v.mask[offset] | TRU);
+ 	};
       };
+
+	v.record_done();
 };
 
 void do_erode_truth(FastVolume & v, V3f where, int radius){
@@ -488,7 +487,6 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 
   int depth = 1000;
   
-  v.undo_buf.push_back(FastVolume::KILL_TRU); //gonna kill some truth...
 
   //what is the least deep part
   for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
@@ -506,8 +504,7 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
       for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
 	int offset = v.getOffset(x,y,z);
 	if((v.mask[offset] & TRU) && (v.depth[offset]+more_depth(x,y,z, where, radius) == depth)){
-	  v.mask[offset] -= (TRU & v.mask[offset]);
-	  v.undo_buf.push_back(offset);
+	  v.record_operation(offset, v.mask[offset] - (TRU & v.mask[offset]));
 	};
 	  };
 };
@@ -516,7 +513,7 @@ void TW_CALL GuiContainer::grow_truth( void * UserData){
   do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
 //unmarking
   for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
-	unmark(*i, the_gui->pnt->cursor, the_gui->radius);
+	unmark(*i, the_gui->pnt->cursor, (float)the_gui->radius);
   the_gui->pnt->vol.updated = true;
   the_gui->sl->update();
   the_gui->pnt->update(); //and make sure all is shown up.....
@@ -706,7 +703,7 @@ void TW_CALL GuiContainer::step_all( void * UserData){
 
 
 void TW_CALL GuiContainer::undo( void *){
-  the_gui->pnt->vol.undo_action();
+  the_gui->pnt->vol.undo();
   the_gui->pnt->vol.updated = true;
   the_gui->pnt->update(); //and make sure all is shown up.....
 };

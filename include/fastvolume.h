@@ -47,7 +47,6 @@ class FastVolume {
   void propagate(int threshold, int amount, int depth, int times);
   void propagate_spread(int threshold, int amount, int depth, int times);
   void propagate_jump(int threshold, int amount, int depth, int times);
-  void undo();   //remove the specified generation and its neighbouring seeds
   void downshift(int flags); //shift all values down;
   void use_tool(int where, int which, int size);
   void scan_for_disconnected_regions();
@@ -126,20 +125,12 @@ class FastVolume {
 
   ///undo facilities
   /// buffer for the new undo infrastructure; test it with undoing truths modifications first.
-std::vector<int> undo_buf;
 
-///what kind of actions are representyed in the undo stack.
-enum undo_actions {
-	ADD_MASK = 0, //add mask (kill mask and seeds, not touching ground truth if undone)
-	ADD_TRU,      //add ground truth (kill if undone)
-	KILL_TRU,      //kill ground truth (add if undone)
-	MAX_ACTION
-};
-
-//query if the following thing is an action or a position
-	bool is_action(int in);
-	void undo_action(); ///undoes several similar actions	
-	void push_undo_item(int in);
+  void record_operation(int pos, unsigned char before, unsigned char after); //call if you want to remember 
+  void record_operation(int pos, unsigned char after);
+  void record_done();
+  void undo();
+  void undo_reset();
 
 };
 
