@@ -397,8 +397,10 @@ void FastVolume::raster(V3f o, V3f _dx, V3f _dy, int w, int h, unsigned char * b
 		((buf[pos*3+i] < 55)?200:255-buf[pos*3+i]):
 		0;
 	    }; 
+	    
 	  };
-
+	  ///highlight
+	  if(mask[offset] & HIG)buf[pos*3]=230;
 	}
       }
       else  //completely outside

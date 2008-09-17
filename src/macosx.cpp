@@ -6,10 +6,13 @@ enum dialog_type {
 };
 
 #ifdef MACOSX
+#define UNDEFINED
+#ifdef UNDEFINED
 #include <Carbon/Carbon.h>
-
+#endif
 std::string GetOpenFileFromUser(dialog_type d_type)
 {
+#ifdef UNDEFINED
   NavDialogCreationOptions dialogOptions;
   NavDialogRef dialog;
   NavReplyRecord replyRecord;
@@ -86,6 +89,9 @@ std::string GetOpenFileFromUser(dialog_type d_type)
  CantCreateDialog:
  CantGetNavOptions:
   return res;
+#else
+  return "";
+#endif //UNDEFINED
 };
 
 std::string getFile(){

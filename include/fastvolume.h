@@ -11,7 +11,8 @@
 #define TRU 0x20 //known-true point; loaded externally.
 #define MSK 0x10 //this is the mask itself... gotta hurt :(
 #define AUX 0x08 //bit for doing various stuff.
-#define GEN_MAX 0x07 //ok, now only 7 generations avaliable; none really needed
+#define HIG 0x04 //highlighting bit.
+#define GEN_MAX 0x03 //ok, now only 3 generations avaliable; none really needed
 #define FLAGS (0xff - GEN_MAX) //getting flags
 #define GEN(X) ((X)&GEN_MAX) //what is the generation
 

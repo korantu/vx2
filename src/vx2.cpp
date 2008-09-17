@@ -30,10 +30,13 @@ struct main_module : public gl_wrapper_reciever {
 
   GlPoints volume;
 
+  float zoomf;
+  
 
   main_module():crossection(& volume){
     render_required = true;
-  };
+    zoomf = 1.0;
+};
 
   struct t_proj {
     double matrix[16];
@@ -141,10 +144,17 @@ struct main_module : public gl_wrapper_reciever {
   };
 
   void do_wheel(){
+    printf("wheel:%d\n", st.w);
+    if(st.w > 100 || st.w < -50)return;
+    zoomf=1.0f+(0.01f*st.w);
+    render_required = true;
   };
 
 
+
   void draw(){
+
+
     if(render_required == true || st.interface_updated == true){
       //
       if(volume.vol.updated){
@@ -164,11 +174,11 @@ struct main_module : public gl_wrapper_reciever {
       glLoadIdentity();
    
       if(st.width>st.height){
-	glOrtho((-(float)st.width/(float)st.height), ((float)st.width/(float)st.height), -1, 1, -2, 2);
-	volume.point_size(1.5f*((float)st.height)/(float)256);
+	glOrtho((-zoomf*(float)st.width/(float)st.height), zoomf*((float)st.width/(float)st.height), -zoomf*1, zoomf*1, -2, 2);
+	volume.point_size(1.5f/zoomf*((float)st.height)/(float)256);
       }else{
-	glOrtho(-1, 1, (-(float)st.height/(float)st.width), ((float)st.height/(float)st.width), -2, 2);
-	volume.point_size(1.5f*((float)st.width)/(float)256);
+	glOrtho(-zoomf*1, zoomf*1, (-zoomf*(float)st.height/(float)st.width), (zoomf*(float)st.height/(float)st.width), -2, 2);
+	volume.point_size(1.5f/zoomf*((float)st.width)/(float)256);
       };
 
  

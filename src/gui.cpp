@@ -193,12 +193,12 @@ void GuiContainer::create(){
   TwAddButton(bar, "", remove_hanging_pieces, NULL, " label='Remove unconnected voxels' group='ROI' ");
   TwAddButton(bar, "", undo, NULL, " label='Undo' key='z' group='Propagation'");
   TwAddButton(bar, "", reseed, NULL, " label='Init propagation front' group='ROI' ");
-  TwAddButton(bar, "", kill_seeds, NULL, " label='Clear propagation front' group='ROI'");
+  TwAddButton(bar, "", kill_seeds, NULL, " label='Clear propagation front' key='n' group='ROI'");
   TwAddButton(bar, "", apply_mask, NULL, " label='Toggle Preview' group='ROI' ");
   TwAddButton(bar, "", load_file_truth, NULL, " label='Load' key='t' group='Ground truth' ");
   TwAddVarRW(bar, "", TW_TYPE_INT32, &radius, " min=1 max=60 step=1 label='Modification radius' group='Ground truth' help='The size of the area where we want to grow the truth' ");
   TwAddButton(bar, "", grow_truth, NULL, " label='Grow' group='Ground truth'");
-  TwAddButton(bar, "", erode_truth, NULL, " label='Erode' group='Ground truth'");
+  TwAddButton(bar, "", erode_truth, NULL, " label='Erode' key='e' group='Ground truth'");
   TwAddButton(bar, "", apply_truth, NULL, " label='Process' group='Ground truth'");
 
   ///and now the slice control:
@@ -475,6 +475,29 @@ void do_grow_truth(FastVolume & v, V3f where, int radius){
 
 void do_erode_truth(FastVolume & v, V3f where, int radius){
 
+  V3f up(1,1,1);
+  V3f o(0,0,0);
+  V3f cur;
+  int cx, cy, cz;
+  int maxp[3] = {-1000,-1000,-1000};
+  int minp[3] = { 1000, 1000, 1000};
+
+  V3f pnt[3];
+  if(v.markers.size() < 3)return; //the thing is not set yet
+  for(int i = 0; i < 3; i++){
+    v.getCoords( v.markers[i], cx, cy, cz); pnt[i]=V3f(cx,cy,cz);
+    if(cx < minp[0])minp[0]=cx; if(cy < minp[1])minp[1]=cy; if(cz < minp[2])minp[2]=cz;
+    if(cx > maxp[0])maxp[0]=cx; if(cy > maxp[1])maxp[1]=cy; if(cz > maxp[2])maxp[2]=cz;
+  };
+  
+  up.cross(pnt[1]-pnt[0], pnt[2]-pnt[0]);
+  up /= up.length();
+  ///make sure it is directed up
+  if((pnt[0]-V3f(128.0f, 128.0f, 128.0f)).dot(up) < 0)up *= -1.0; 
+
+  printf("Got up vector as %f,%f,%f", up.x, up.y, up.z);
+
+
 	//unmarking
   for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
 	unmark(*i, the_gui->pnt->cursor, (float)the_gui->radius);
@@ -485,28 +508,48 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
     if(radius < 0)radius = 0;
   };
 
-  int depth = 1000;
-  
 
-  //what is the least deep part
-  for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
-    for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
-      for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
-	int offset = v.getOffset(x,y,z);
-	if(v.mask[offset] & TRU){
-	  //offset
-	  if(depth > (v.depth[offset]+more_depth(x,y,z, where, radius)))
-	     depth = v.depth[offset]+more_depth(x,y,z, where, radius);
+  float max_depth = -1000;
+  float min_depth = 1000;
+  float threshold; //defined after first pass;
+  float marking_threshold; //threshold for the next step
+
+  printf("\n[%d %d %d]-[%d %d %d]\n", minp[0], minp[1], minp[2], 
+	                            maxp[0], maxp[1], maxp[2]);
+
+  for(int pass = 0; pass <= 1; pass++){
+    //on the last pass define the threshold
+    if(pass == 1){
+      threshold = max_depth - (max_depth-min_depth)/40.0f;
+      marking_threshold = max_depth - (max_depth-min_depth)/10.0f;
+    };
+
+    //around points with 3 margin
+    for(int x = minp[0]-3; x <= maxp[0]+3; x++)
+      for(int y = minp[1]-3; y <= maxp[1]+3; y++)
+	for(int z = minp[2]-3; z <= maxp[2]+3; z++){
+	  int offset = v.getOffset(x,y,z);
+	  if(!pass)v.mask[offset] -= (HIG & v.mask[offset]);
+	  if(v.mask[offset] & TRU){
+	    //offset
+	    v.getCoords(offset, cx, cy, cz); cur = V3f( cx, cy, cz);	  
+	    float cur_depth = up.dot(cur);
+	    if(cur_depth > max_depth)max_depth = cur_depth;
+	    if(cur_depth < min_depth)min_depth = cur_depth;
+	    if( pass ){
+	      if( threshold < cur_depth )
+		v.record_operation(offset, 
+				   v.mask[offset] - ((HIG | TRU) & v.mask[offset]));
+	      if(cur_depth > marking_threshold &&
+		 cur_depth < threshold)
+		v.mask[offset] |= HIG;
+	      
+	    };
+	  };	  
 	};
-      };
-  for(int x = (int)(where.x-radius); x < (int)(where.x+radius); x++)
-    for(int y = (int)(where.y-radius); y < (int)(where.y+radius); y++)
-      for(int z = (int)(where.z-radius); z < (int)(where.z+radius); z++){
-	int offset = v.getOffset(x,y,z);
-	if((v.mask[offset] & TRU) && (v.depth[offset]+more_depth(x,y,z, where, radius) == depth)){
-	  v.record_operation(offset, v.mask[offset] - (TRU & v.mask[offset]));
-	};
-	  };
+
+  };
+  v.record_done();
 };
 
 void TW_CALL GuiContainer::grow_truth( void * UserData){
@@ -641,7 +684,7 @@ void TW_CALL GuiContainer::kill_seeds( void * UserData){
   printf("Kill seeds\n");
   for(int i = 0; i < 256*256*256; i++){
     if(the_gui->pnt->vol.mask[i] & BDR){
-      the_gui->pnt->vol.mask[i] -= (the_gui->pnt->vol.mask[i] & MASK);
+      the_gui->pnt->vol.mask[i] -= (the_gui->pnt->vol.mask[i] & (MASK | HIG));
     };
   };
 
@@ -798,6 +841,7 @@ void set_current_file(std::string in){
     TwDefine((std::string("") + " GLOBAL help='Now editing " + in + "' ").c_str()); // Change global help to the file being edited 
   
 };
+
 
 
 
