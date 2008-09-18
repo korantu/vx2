@@ -256,7 +256,18 @@ void GlPoints::draw(V3f zaxis){
 */
   glEnd();
 
-
+  //drawing plane
+  glDisable(GL_DEPTH_TEST);
+  glBegin(GL_POINTS);
+  for(std::vector<int>::iterator i = vol.plane.begin(); i != vol.plane.end(); i++){
+    cur_depth = vol.vol[*i]; 
+     vol.getCoords(*i, x,y,z);
+     //float pnt_col =  vol.vol[*i]/300.0;
+     glColor3f(cur_depth, cur_depth, cur_depth);
+     glVertex3i(x,y,z);
+  };
+  glEnd();
+  glEnable(GL_DEPTH_TEST);
 
   ///draw cursor
    glBegin(GL_LINES);
@@ -363,7 +374,21 @@ void GlPoints::draw(V3f zaxis){
 
   
   glDepthMask(GL_TRUE);
-  
+  glDisable(GL_DEPTH_TEST);
+
+  glBegin(GL_POINTS);
+  for(std::vector<int>::iterator i = vol.plane.begin(); i != vol.plane.end(); i++){
+    vol.getCoords(*i, x,y,z);
+    int t_col = vol.vol[*i];
+    if(t_col < 1)t_col=1;
+    if(t_col > 254)t_col=254;
+    mapper.map(r,g,b ,t_col);
+    glColor3f(r / 256.0f, g / 256.0f, b / 256.0f);
+    glVertex3i(x,y,z);
+  };
+  glEnd();
+  glEnable(GL_DEPTH_TEST);
+
 
 };
 

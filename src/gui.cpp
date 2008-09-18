@@ -479,9 +479,12 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
   V3f o(0,0,0);
   V3f cur;
   int cx, cy, cz;
+
+  /// bounding box
   int maxp[3] = {-1000,-1000,-1000};
   int minp[3] = { 1000, 1000, 1000};
 
+  ///use first 3 seeds both for plane definition and for dialog box
   V3f pnt[3];
   if(v.markers.size() < 3)return; //the thing is not set yet
   for(int i = 0; i < 3; i++){
@@ -497,6 +500,8 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 
   printf("Got up vector as %f,%f,%f", up.x, up.y, up.z);
 
+  ///remove any plane points, if required:
+  v.plane.clear();
 
 	//unmarking
   for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
@@ -507,7 +512,6 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
     radius = (where[i]-radius < 1)?((int)where[i]-1):radius;
     if(radius < 0)radius = 0;
   };
-
 
   float max_depth = -1000;
   float min_depth = 1000;
@@ -541,9 +545,11 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 		v.record_operation(offset, 
 				   v.mask[offset] - ((HIG | TRU) & v.mask[offset]));
 	      if(cur_depth > marking_threshold &&
-		 cur_depth < threshold)
+		 cur_depth < threshold){
 		v.mask[offset] |= HIG;
-	      
+	      ///and add it to 3d plane as well
+		v.plane.push_back(offset);
+	      };
 	    };
 	  };	  
 	};
@@ -689,6 +695,7 @@ void TW_CALL GuiContainer::kill_seeds( void * UserData){
   };
 
   the_gui->pnt->vol.markers.clear();
+  the_gui->pnt->vol.plane.clear();
 
   the_gui->pnt->vol.updated = true;
   the_gui->pnt->update(); //and make sure all is shown up.....

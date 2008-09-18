@@ -86,7 +86,7 @@ bool read_surface_binary(Surface & surf, std::string name){
   //reading points and pushing normals
   for(int i = 0; i < points; i++){
     V3f in;
-//    int dummy;
+  //int dummy;
     in.x = read_float(file);
     in.y = read_float(file);
     in.z = read_float(file);

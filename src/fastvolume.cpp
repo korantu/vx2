@@ -257,6 +257,7 @@ void FastVolume::reset(){
     depth[i] = 254;
    };
   markers.clear();
+  plane.clear(); 
   cur_gen=1;
   undo_reset();
 };

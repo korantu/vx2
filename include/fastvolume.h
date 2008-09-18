@@ -42,6 +42,8 @@ class FastVolume {
 
   ///markers
   std::vector<int> markers;
+  std::vector<int> plane;
+
   unsigned char * mask;
   unsigned char * depth;
   //void add_point(V3f &in); use tool
