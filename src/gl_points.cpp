@@ -276,7 +276,7 @@ void GlPoints::draw(V3f zaxis){
   glColor3f(0,0,1); glVertex3f(cursor.x,cursor.y,cursor.z+cursor_size); glVertex3f(cursor.x,cursor.y,cursor.z-cursor_size);
   glEnd();
 
-  vector<Surface> * s = get_active_surfaces();
+  Surface * surf = get_active_surfaces();
 
   //glPointSize(1.0);
 
@@ -300,7 +300,6 @@ void GlPoints::draw(V3f zaxis){
 
 
   glBegin(GL_TRIANGLES);
-  for(vector<Surface>::iterator surf = s->begin(); surf != s->end(); surf++){
 
     //each surface surf
 
@@ -325,7 +324,7 @@ void GlPoints::draw(V3f zaxis){
         glVertex3f( surf->v[idx].x , surf->v[idx].y , surf->v[idx].z );
       };
     };    
-  };
+  
   glEnd();
 
   glDisable(GL_LIGHTING);

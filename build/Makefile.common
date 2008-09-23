@@ -1,5 +1,7 @@
 #flags common to Makefile-based builds (g++)
-CXXFLAGS := $(CXXFLAGS) -g -O3 -I../../include -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL 
+CXXFLAGS := $(CXXFLAGS) -g -O3 -I../../include -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL -I../../deps/test/gtest-1.1.0/include 
+LINKFLAGS := $(LINKFLAGS) -L../../deps/test/gtest-1.1.0/libs/.libs
+DEBUGFLAGS := ../../deps/test/gtest-1.1.0/lib/.libs/libgtest.a ../../deps/test/gtest-1.1.0/lib/.libs/libgtest_main.a
 
 #list of object modules required for the project
 VX2 := navigator.o \
@@ -14,6 +16,8 @@ VX2 := navigator.o \
 	surface.o \
 	macosx.o
 
+VX2_TESTS := surface_unittest.o 
+
 #corresponding list of source files; needed for dependency building with g++
 VX2_SRC := ../../src/v3tools.cpp \
 	../../src/fastvolume.cpp \
@@ -27,9 +31,12 @@ VX2_SRC := ../../src/v3tools.cpp \
 	../../src/vx2.cpp \
 	../../src/gui.cpp 
 
+VX2_TESTS_SRC := ../../src/surface_unittest.cpp \
+	     ../../src/tests_runner.cpp
+
 #build dependencies using g++
-deps: $(VX2_SRC)
-	$(CXX) $(CXXFLAGS) -M $(VX2_SRC) vx2.o > deps.txt
+deps: $(VX2_SRC) $(VX2_TESTS_SRC)
+	$(CXX) $(CXXFLAGS) -M $(VX2_SRC) $(VX2_TESTS_SRC) vx2.o > deps.txt
 
 #vx2 main build taret.
 vx2: $(VX2) vx2.o tags
@@ -37,6 +44,9 @@ vx2: $(VX2) vx2.o tags
 
 t: $(VX2) t.o tags
 	$(CXX) $(VX2) t.o $(LINKFLAGS) -o t
+
+tests: $(VX2) $(VX2_TESTS) tests_runner.o
+	$(CXX) $(VX2) $(VX2_TESTS) $(LINKFLAGS) $(DEBUGFLAGS) tests_runner.o -o  tests_runner
 
 .PHONY: clean tags 
 clean:

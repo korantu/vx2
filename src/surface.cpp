@@ -18,10 +18,13 @@ A file for surface manipulation;
 #define READ read
 #define CLOSE close
 #endif
-vector<Surface> __surfaces;
+
+/*** global surface ***/
+Surface __surfaces;
 
 //accessor. making sure the actual storage is only defined once.
-vector<Surface> * get_active_surfaces(){
+
+Surface * get_active_surfaces(){
   return & __surfaces;
 };
 
@@ -55,6 +58,10 @@ bool read_surface_binary(Surface & surf, std::string name){
   int tris;       //for the number of triangles
   unsigned char buf[1000]; //for data
   bool result = true;
+
+  V3f seed = V3f(0,0,0);
+
+  int start_index = surf.v.size();
   
   int file = OPEN(name.c_str(), O_RDONLY | O_BINARY, 0);
   if(file < 0) return false; //cannot open file.
@@ -81,7 +88,7 @@ bool read_surface_binary(Surface & surf, std::string name){
     points = read_int(file);
     tris = read_int(file);
     
-    printf("Expecting %d points and %d triangles.\n", points, tris);
+    //    printf("Expecting %d points and %d triangles.\n", points, tris);
     
   //reading points and pushing normals
   for(int i = 0; i < points; i++){
@@ -92,21 +99,25 @@ bool read_surface_binary(Surface & surf, std::string name){
     in.z = read_float(file);
     in = V3f(-in.x, +in.z, +in.y);
     in+=V3f(128, 127, 128);
-    printf("%f, %f, %f\n", in.x, in.y, in.z);
+    //  printf("%f, %f, %f\n", in.x, in.y, in.z);
     surf.v.push_back(in);
+    seed += in;
     surf.n.push_back(V3f(0,0,0));
   };
 
+  seed /= points;
+  surf.seeds.push_back(seed);
+
   for(int i = 0; i < tris; i++){
     int a, b, c;//, zero; 
-    a = 0;
-    b = 0;
-    c = 0;
+    a = start_index;
+    b = start_index;
+    c = start_index;
     a = read_int(file);
     b = read_int(file);
     c = read_int(file);
     surf.tri.push_back(V3i(a,b,c));
-    if(i < 3)printf("((%d %d %d))\n", a, b, c);
+    //    if(i < 3)printf("((%d %d %d))\n", a, b, c);
   
     V3f n; n.cross(surf.v[b]-surf.v[a], surf.v[c]-surf.v[a]);
     n /= -n.length(); //normal - outside
@@ -143,8 +154,10 @@ bool read_surface(Surface & surf, std::string name){
   char buf[1000]; //for filename
 
   
-  FILE * f = fopen(name.c_str(), "ro");
-  
+  ///KDL  FILE * f = fopen(name.c_str(), "ro");
+  ///weird
+ FILE * f = fopen("lh.pial", "ro");
+
   try {
 
   if(f == NULL){

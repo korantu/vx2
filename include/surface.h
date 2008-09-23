@@ -24,9 +24,12 @@ struct Surface{
   vector<V3i> tri; ///indices
 
   int n_tris; 
+
+  vector<V3f> seeds; // where propagation be started should it be needed
   
 };
 
+Surface * get_active_surfaces();
 //make a radius of uniform color
 void unmark(Surface &, V3f where, float radius);
 
@@ -34,8 +37,6 @@ int surface_tris(Surface &);
 void surface_points(int n, int &, int &, int &);
 /// sort triangles in a direction
 void surface_sort(V3f direction);
-
-vector<Surface> * get_active_surfaces();
 
 bool read_surface(Surface & surf, std::string name); 
 bool read_surface_binary(Surface & surf, std::string name); 
@@ -72,6 +73,8 @@ void refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n, const 
 
 
 #endif // __surface_h__
+
+
 
 
 

@@ -244,7 +244,8 @@ void TW_CALL GuiContainer::load_file( void * UserData){
     the_gui->pnt->find_surface();
   };
 
-  get_active_surfaces()->clear();
+  //TODO: clear the surface.
+  ///get_active_surfaces()->clear();
   the_gui->sl->update();
   the_gui->pnt->update(); //and make sure all is shown up.....
 
@@ -504,10 +505,10 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
   v.plane.clear();
 
 	//unmarking
-  for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
-	unmark(*i, the_gui->pnt->cursor, (float)the_gui->radius);
 
-	for(int i = 0; i <3; i++){
+  unmark(*get_active_surfaces(), the_gui->pnt->cursor, (float)the_gui->radius);
+
+  for(int i = 0; i <3; i++){
     radius = (where[i]+radius > 255)?255-(int)where[i]:radius;
     radius = (where[i]-radius < 1)?((int)where[i]-1):radius;
     if(radius < 0)radius = 0;
@@ -561,8 +562,8 @@ void do_erode_truth(FastVolume & v, V3f where, int radius){
 void TW_CALL GuiContainer::grow_truth( void * UserData){
   do_grow_truth(the_gui->pnt->vol, the_gui->pnt->cursor, the_gui->radius);
 //unmarking
-  for(std::vector<Surface>::iterator i = get_active_surfaces()->begin(); i != get_active_surfaces()->end(); i++) 
-	unmark(*i, the_gui->pnt->cursor, (float)the_gui->radius);
+  
+    unmark(*get_active_surfaces(), the_gui->pnt->cursor, (float)the_gui->radius);
   the_gui->pnt->vol.updated = true;
   the_gui->sl->update();
   the_gui->pnt->update(); //and make sure all is shown up.....
@@ -581,7 +582,7 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData)
 
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
-    Surface it;
+    Surface & it = *get_active_surfaces();
     if(!read_surface_binary(it, in))
       read_surface(it, in);
     printf("Obtained %d vertices, and %d triangles, thanks for asking.\n",
@@ -591,7 +592,6 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData)
     analyze_surface(it, *the_gui->pnt);
     rasterize_surface(it, *the_gui->pnt, t);
 
-    get_active_surfaces()->push_back(it);
   };  
   the_gui->sl->update();
 
