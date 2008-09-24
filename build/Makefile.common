@@ -14,9 +14,13 @@ VX2 := navigator.o \
 	color.o \
 	gui.o \
 	surface.o \
-	macosx.o
+	macosx.o \
+	misc.o \
+	io.o
 
-VX2_TESTS := surface_unittest.o 
+VX2_TESTS := surface_unittest.o \
+	  misc_unittest.o \
+	  io_unittest.o
 
 #corresponding list of source files; needed for dependency building with g++
 VX2_SRC := ../../src/v3tools.cpp \
@@ -29,7 +33,9 @@ VX2_SRC := ../../src/v3tools.cpp \
 	../../src/surface.cpp \
 	../../src/macosx.cpp \
 	../../src/vx2.cpp \
-	../../src/gui.cpp 
+	../../src/gui.cpp \
+	../../src/misc.cpp \
+	../../src/io.cpp
 
 VX2_TESTS_SRC := ../../src/surface_unittest.cpp \
 	     ../../src/tests_runner.cpp
@@ -60,8 +66,6 @@ tags:
 %.o: ../../src/%.cpp
 	$(CXX) -c $< $(CXXFLAGS) -o $@  
 
-
-
-
-
-
+#pushing the changes out
+git:
+	git push git@github.com:korantu/vx2.git

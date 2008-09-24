@@ -1,2 +1,3 @@
 Write more surface tests;
 Make timings;
+Write IO properly; It is horrible at the moment.

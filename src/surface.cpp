@@ -6,6 +6,7 @@ A file for surface manipulation;
  */
 
 #include "surface.h"
+#include "misc.h"
 
 #ifdef WIN32
 #include <io.h>
@@ -26,6 +27,11 @@ Surface __surfaces;
 
 Surface * get_active_surfaces(){
   return & __surfaces;
+};
+
+void clear(Surface & in){
+  in.v.clear(); in.n.clear(); in.tri.clear(); 
+  in.seeds.clear();
 };
 
 int read_int(int fd){
@@ -110,12 +116,9 @@ bool read_surface_binary(Surface & surf, std::string name){
 
   for(int i = 0; i < tris; i++){
     int a, b, c;//, zero; 
-    a = start_index;
-    b = start_index;
-    c = start_index;
-    a = read_int(file);
-    b = read_int(file);
-    c = read_int(file);
+    a = read_int(file)+start_index;
+    b = read_int(file)+start_index;
+    c = read_int(file)+start_index;
     surf.tri.push_back(V3i(a,b,c));
     //    if(i < 3)printf("((%d %d %d))\n", a, b, c);
   
@@ -550,7 +553,8 @@ void rasterize_surface(Surface & surf,
 
 void unmark(Surface & in, V3f where, float radius){
 	for(int i = 0; i < in.v.size(); i++){
-		if((in.v[i] - where).length() < radius){
+	  float dist = (in.v[i] - where).length();
+	  if(dist < radius){
 			in.c[i].x = 0.0;
 		};
 	};

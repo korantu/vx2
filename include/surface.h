@@ -1,4 +1,4 @@
-#ifndef __surface_h__
+ #ifndef __surface_h__
 #define __surface_h__
 
 
@@ -20,18 +20,16 @@ using namespace std;
 struct Surface{
   vector<V3f> n; ///Normals
   vector<V3f> v; ///Vectors (have to be of the same size as normals;  
-  vector<V3f> c; ///colors
+  vector<V3f> c; ///colors needed for analyzing surface;
   vector<V3i> tri; ///indices
-
-  int n_tris; 
-
   vector<V3f> seeds; // where propagation be started should it be needed
-  
 };
 
 Surface * get_active_surfaces();
 //make a radius of uniform color
 void unmark(Surface &, V3f where, float radius);
+
+void clear(Surface &);
 
 int surface_tris(Surface &);
 void surface_points(int n, int &, int &, int &);
