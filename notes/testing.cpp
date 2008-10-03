@@ -16,5 +16,8 @@ TEST_F(Fixture, TestName){
 
 /*** Checks: ***/
 
+/*** Running ***/
+
+export GTEST_FILTER=Io.*
 
   

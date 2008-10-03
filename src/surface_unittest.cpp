@@ -11,6 +11,15 @@ public:
   Surface b;
 };
 
+TEST_F(SurfaceTest, Header) {
+  int triangles_number, vertices_number;
+  Io data(ReadFile("rh.pial"));
+  EXPECT_TRUE(ReadPialHeader(data, &vertices_number, &triangles_number));
+  printf("%d:%d vertices:triangles numbers\n", 
+	 vertices_number,
+	 triangles_number);
+};
+
 /// 1 BSQ
 TEST_F(SurfaceTest, IO) {
   EXPECT_EQ(surf.v.size()+surf.n.size()+surf.c.size()+surf.tri.size()+surf.seeds.size(), 0);

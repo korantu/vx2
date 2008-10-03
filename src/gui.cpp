@@ -583,8 +583,8 @@ void TW_CALL GuiContainer::load_file_truth( void * UserData)
   if(in.length() > 0){
     printf("indeed, got %s\n", in.c_str());
     Surface & it = *get_active_surfaces();
-    if(!read_surface_binary(it, in))
-      read_surface(it, in);
+    if(!read_surface_binary(it, in))return;
+
     printf("Obtained %d vertices, and %d triangles, thanks for asking.\n",
 	   (int)it.n.size(), (int)it.tri.size() );
     

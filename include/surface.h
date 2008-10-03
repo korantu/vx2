@@ -1,12 +1,12 @@
  #ifndef __surface_h__
 #define __surface_h__
 
+#include <vector>
+#include <stdio.h>
 
 #include "v3.h"
 #include "gl_points.h"
-
-#include <vector>
-#include <stdio.h>
+#include "io.h"
 
 //reading a surface from a file
 
@@ -36,9 +36,10 @@ void surface_points(int n, int &, int &, int &);
 /// sort triangles in a direction
 void surface_sort(V3f direction);
 
-bool read_surface(Surface & surf, std::string name); 
+//bool read_surface(Surface & surf, std::string name); 
 bool read_surface_binary(Surface & surf, std::string name); 
 
+bool ReadPialHeader(Io & data, int * vertices, int * triangles);
 /*
    Structure to control the rasterization process
 */

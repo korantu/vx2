@@ -7,18 +7,8 @@ A file for surface manipulation;
 
 #include "surface.h"
 #include "misc.h"
+#include "io.h"
 
-#ifdef WIN32
-#include <io.h>
-#define OPEN _open
-#define READ _read
-#define CLOSE _close
-#define BIGENDIAN
-#else
-#define OPEN open
-#define READ read
-#define CLOSE close
-#endif
 
 /*** global surface ***/
 Surface __surfaces;
@@ -34,75 +24,56 @@ void clear(Surface & in){
   in.seeds.clear();
 };
 
-int read_int(int fd){
-  unsigned char buf[4];
-  int res;
-  unsigned char * pnt = (unsigned char *)&res;
-  if(4 != READ(fd, (void *) buf, 4))throw "Unable to read integer";
-  for(int i = 0; i < 4; i++)pnt[i] = buf[3-i];
-  return res;
-};
 
-float read_float(int fd){
-  unsigned char buf[4];
-  float res;
-  unsigned char * pnt = (unsigned char *)&res;
-  if(4 != READ(fd, (void *) buf, 4))throw "Unable to read float";
-//reversing
-  for(int i = 0; i < 4; i++)pnt[i] = buf[3-i];
-  return res;
-};
+bool ReadPialHeader(Io & data, int * vertices, int * triangles){
 
-//TODO: unify read_surface_binary
-///MSVC leftover.
-#ifndef O_BINARY
-#define O_BINARY 0x0
-#endif
+  //obviously wrong;
+  if(data.size() < 5)return false;
 
-bool read_surface_binary(Surface & surf, std::string name){
-  int points;     //for the number of points
-  int tris;       //for the number of triangles
-  unsigned char buf[1000]; //for data
-  bool result = true;
+  //check signature
+  const char signature[3] = {0xff, 0xff, 0xfe};
+  for (int i = 0 ; i < 3; ++i) {
+    char item; data.GetChar(&item);
+    if (signature[i] != item) return false;
+  };
 
-  V3f seed = V3f(0,0,0);
-
-  int start_index = surf.v.size();
-  
-  int file = OPEN(name.c_str(), O_RDONLY | O_BINARY, 0);
-  if(file < 0) return false; //cannot open file.
-
-  try {
-    buf[0]=0; READ(file, (void *)(buf), 3);
-    if((buf[0]==0xff) && (buf[1]==0xff) && (buf[2]==0xfe) ){
-      printf("Format indicator matches.");
-    }else{
-      throw "Incorrect file";
-    };
-    
-    //searching for 0x0a 0x0a
-    int check = 0;
-    
-    while((check = READ(file, (void *) buf, 1)) > 0){
-      if(buf[0] == 0x0a){ //check if another one is behind; if so - done.
-	READ(file, (void *) buf, 1);
-	  if(buf[0] == 0x0a)break;
+  //look for 0x0a 0x0a
+  while (!data.error()) {
+    char oxa_wannabe;
+    data.GetChar(&oxa_wannabe);
+    if (oxa_wannabe == 0x0a) { //check if another one is behind; if so - done.
+      data.GetChar(&oxa_wannabe);
+      if (oxa_wannabe == 0x0a) {
+	break;
       };
     };
-    if(check == 0)throw "Error while looking for the end of signature";
-    
-    points = read_int(file);
-    tris = read_int(file);
-    
+  };
+
+  data.GetInt(vertices).GetInt(triangles);
+  
+  return !data.error();
+  
+};
+
+bool read_surface_binary(Surface & surf, std::string name){
+  int vertices_number;     //for the number of vertices
+  int triangles_number;       //for the number of triangles
+  bool result = true;
+
+  int start_index = surf.v.size();
+
+  Io data(ReadFile(name));
+
+  if(!ReadPialHeader(data, &vertices_number, &triangles_number))return false;
+
+  V3f seed = V3f(0,0,0);
     //    printf("Expecting %d points and %d triangles.\n", points, tris);
     
   //reading points and pushing normals
-  for(int i = 0; i < points; i++){
+  for(int i = 0; i < vertices_number; i++){
     V3f in;
   //int dummy;
-    in.x = read_float(file);
-    in.y = read_float(file);
-    in.z = read_float(file);
+    data.GetFloat(&in.x).GetFloat(&in.y).GetFloat(&in.z);
     in = V3f(-in.x, +in.z, +in.y);
     in+=V3f(128, 127, 128);
     //  printf("%f, %f, %f\n", in.x, in.y, in.z);
@@ -111,14 +82,15 @@ bool read_surface_binary(Surface & surf, std::string name){
     surf.n.push_back(V3f(0,0,0));
   };
 
-  seed /= points;
+  seed /= vertices_number;
   surf.seeds.push_back(seed);
 
-  for(int i = 0; i < tris; i++){
+  for(int i = 0; i < triangles_number; i++){
     int a, b, c;//, zero; 
-    a = read_int(file)+start_index;
-    b = read_int(file)+start_index;
-    c = read_int(file)+start_index;
+    data.GetInt(&a).GetInt(&b).GetInt(&c);
+    a += start_index;
+    b += start_index;
+    c += start_index;
     surf.tri.push_back(V3i(a,b,c));
     //    if(i < 3)printf("((%d %d %d))\n", a, b, c);
   
@@ -130,14 +102,7 @@ bool read_surface_binary(Surface & surf, std::string name){
     surf.n[c] = surf.n[c] + n; 
   };
 
-
-
-  } catch (const char * a){
-    printf("Problem occured: %s\n", a);
-    result = false;
-  };
-
-  CLOSE(file);
+  if(data.error())return false;
 
   for(unsigned int i = 0; i < surf.n.size(); i++){
     V3f n = surf.n[i];
@@ -150,81 +115,6 @@ bool read_surface_binary(Surface & surf, std::string name){
   return true;
 
 };
-
-bool read_surface(Surface & surf, std::string name){
-  int points;     //for the number of points
-  int tris;       //for the number of triangles
-  char buf[1000]; //for filename
-
-  
-  ///KDL  FILE * f = fopen(name.c_str(), "ro");
-  ///weird
- FILE * f = fopen("lh.pial", "ro");
-
-  try {
-
-  if(f == NULL){
-    printf("Cannot open surface file;\n");
-    return false;
-  };
-
-  fgets( buf, 1000, f); //first line, don't care
-  if(feof(f)) throw "eof";
-  fscanf(f, "%d %d\n", &points, &tris);
-  if(feof(f)) throw "eof";
-  printf("Sanity checking\n");
-  if(points < 0 || tris < 0)return false;
- 
-
-  printf("%d pints, %d triangles, what gives?", points, tris);
-
-  //reading points and pushing normals
-  for(int i = 0; i < points; i++){
-    V3f in;
-    int dummy;
-    fscanf(f, "%f  %f  %f  %d\n", &in.x, &in.y, &in.z, &dummy);
-    if(feof(f)) throw "eof";
-    in = V3f(-in.x, +in.z, +in.y);
-    in+=V3f(128, 127, 128);
-    surf.v.push_back(in);
-    surf.n.push_back(V3f(0,0,0));
-  };
-
-  for(int i = 0; i < tris; i++){
-    int a, b, c, zero; 
-    a = 0;
-    b = 0;
-    c = 0;
-    fscanf(f, "%d %d %d %d\n", &a, &b, &c, &zero);
-    if(feof(f)) throw "eof";
-  surf.tri.push_back(V3i(a,b,c));
-    if(i < 3)printf("((%d %d %d))\n", a, b, c);
-  
-    V3f n; n.cross(surf.v[b]-surf.v[a], surf.v[c]-surf.v[a]);
-    n /= -n.length(); //normal - outside
-
-    surf.n[a] = surf.n[a] + n; 
-    surf.n[b] = surf.n[b] + n; 
-    surf.n[c] = surf.n[c] + n; 
-  };
-
-  }catch(const char *){
-    printf("Problem reading surface.\n");
-  };
-
-  fclose(f);
-
-  for(unsigned int i = 0; i < surf.n.size(); i++){
-    V3f n = surf.n[i];
-    n /= n.length();
-    surf.n[i] = n;
-  };
-
-  printf("stor size is:%d\n", (int)surf.v.size());
-  
-  return true;
-};
-
 
 V3f find_center_point(const Surface & surf)
 {
