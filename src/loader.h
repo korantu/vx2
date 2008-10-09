@@ -12,6 +12,8 @@
 #include <fcntl.h>
 
 #include "fastvolume.h"
+#include "io.h"
+#include "misc.h"
 
 /* Load data from file */
 
@@ -81,6 +83,45 @@ private:
   void parse(raw data, FastVolume & result, bool read);
 
 };
+
+///Loader interface for MGZ files.
+///Exposes header of original file.
+///Remembers raw data and file name.
+
+class MgzLoader: public Validatable {
+ public:
+
+  enum DataType{
+    UCHAR = 0,
+    INT,
+    LONG,
+    FLOAT,
+    SHORT,
+    BITMAP,
+    TENSOR
+  };
+
+  struct Header{
+    int width;
+    int height;
+    int depth;
+    
+    DataType data_type;
+  };
+
+  MgzLoader(FastVolume &);
+  ~MgzLoader();
+
+  MgzLoader & Load(std::string name);
+  MgzLoader & Save(std::string name);
+  
+ private:
+  Header header_;
+  FastVolume & volume_;
+  std::string file_name_;
+  std::string file_content_;
+};
+
 
 #endif // __loader_h__
 

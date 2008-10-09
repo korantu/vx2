@@ -167,7 +167,7 @@ struct main_module : public gl_wrapper_reciever {
       gui_resize(st.width, st.height);
 
       glClearColor(1.0,1.0,1.0, 1.0);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
       glEnable(GL_DEPTH_TEST);
       glViewport(0,0, st.width, st.height);
       glMatrixMode(GL_PROJECTION);
@@ -176,9 +176,11 @@ struct main_module : public gl_wrapper_reciever {
       if(st.width>st.height){
 	glOrtho((-zoomf*(float)st.width/(float)st.height), zoomf*((float)st.width/(float)st.height), -zoomf*1, zoomf*1, -2, 2);
 	volume.point_size(1.5f/zoomf*((float)st.height)/(float)256);
+	//volume.point_size(0.2f/zoomf*((float)st.height)/(float)256);
       }else{
 	glOrtho(-zoomf*1, zoomf*1, (-zoomf*(float)st.height/(float)st.width), (zoomf*(float)st.height/(float)st.width), -2, 2);
 	volume.point_size(1.5f/zoomf*((float)st.width)/(float)256);
+	//volume.point_size(0.2f/zoomf*((float)st.width)/(float)256);
       };
 
  
@@ -534,8 +536,7 @@ int main(int argc, char ** argv)
   core.volume.find_surface();
 
   color_init();
-  ;
-  
+    
   gl_init(&core);
   gui_start( &core.crossection, &core.volume);
 

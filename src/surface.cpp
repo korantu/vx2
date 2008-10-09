@@ -38,7 +38,7 @@ bool ReadPialHeader(Io & data, int * vertices, int * triangles){
   };
 
   //look for 0x0a 0x0a
-  while (!data.error()) {
+  while (data.valid()) {
     char oxa_wannabe;
     data.GetChar(&oxa_wannabe);
     if (oxa_wannabe == 0x0a) { //check if another one is behind; if so - done.
@@ -51,7 +51,7 @@ bool ReadPialHeader(Io & data, int * vertices, int * triangles){
 
   data.GetInt(vertices).GetInt(triangles);
   
-  return !data.error();
+  return data.valid();
   
 };
 
@@ -102,7 +102,7 @@ bool read_surface_binary(Surface & surf, std::string name){
     surf.n[c] = surf.n[c] + n; 
   };
 
-  if(data.error())return false;
+  if(!data.valid())return false;
 
   for(unsigned int i = 0; i < surf.n.size(); i++){
     V3f n = surf.n[i];
@@ -151,7 +151,9 @@ void refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n, const 
       good = (dir.dot(n)<0);
       if(!t.half)good = true;
 
-      int cur = pnt.vol.getOffset((int)floor(v[i].x), (int)floor(v[i].y), (int)floor(v[i].z));
+      int cur = pnt.vol.getOffset((int)floor(v[i].x), 
+				  (int)floor(v[i].y), 
+				  (int)floor(v[i].z));
            
       if(cur < 0 || cur > 255*255*255)return;
       if(!(pnt.vol.mask[cur] & TRU)){
@@ -165,9 +167,9 @@ void refine_triangle(V3f & v0, V3f & v1, V3f & v2, GlPoints & pnt, V3f n, const 
   //check if the refinement is needed, i.e. tris are too big ( > 0.5 voxels )
   
 
-  if(((v0-v1).length2() > 0.2 ||
-      (v1-v2).length2() > 0.2 ||
-      (v2-v0).length2() > 0.2)){
+  if(((v0-v1).length2() > 0.1 ||
+      (v1-v2).length2() > 0.1 ||
+      (v2-v0).length2() > 0.1)){
     V3f o0 = (v0+v1)/2;
     V3f o1 = (v1+v2)/2;
     V3f o2 = (v2+v0)/2;
@@ -233,6 +235,7 @@ inline float interpolate_lookup(V3f v, GlPoints & pnt, lookup_type what){
 };
 
 struct point_property{
+
   enum {
     CONFIGURATION = 0,
     DEPTH,
@@ -242,6 +245,7 @@ struct point_property{
     INTENSITY_PER_GRADIENT,
     LAST_PARAM
   };
+
   float param[LAST_PARAM+1];
 
   //getters  
@@ -423,7 +427,7 @@ void rasterize_surface(Surface & surf,
    pnt.vol.mask[cur] |= BDR;
    pnt.vol.markers.push_back(cur);
   
-  pnt.vol.propagate(1000, 0, 1000, 400); //propagate everywhere from centerpoint  
+   //pnt.vol.propagate(1000, 0, 1000, 400); //propagate everywhere from centerpoint  
 
   //remove truth mask as not propagating anymore
   

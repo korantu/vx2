@@ -40,13 +40,3 @@ void gl_init(gl_wrapper_reciever *);
 void gl_stop();
 
 #endif // __GL_WRAPPER__
-
-
-
-
-
-
-
-
-
-

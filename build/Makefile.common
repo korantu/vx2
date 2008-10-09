@@ -1,5 +1,5 @@
 #flags common to Makefile-based builds (g++)
-CXXFLAGS := $(CXXFLAGS) -g -O0 -I../../include -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL -I../../deps/test/gtest-1.1.0/include 
+CXXFLAGS := $(CXXFLAGS) -g -O3 -I../../deps/anttweakbar/include -I../../deps/glfw/include -I../../deps/glfw/include/GL -I../../deps/test/gtest-1.1.0/include 
 LINKFLAGS := $(LINKFLAGS) -L../../deps/test/gtest-1.1.0/libs/.libs
 DEBUGFLAGS := ../../deps/test/gtest-1.1.0/lib/.libs/libgtest.a ../../deps/test/gtest-1.1.0/lib/.libs/libgtest_main.a
 
@@ -16,11 +16,13 @@ VX2 := navigator.o \
 	surface.o \
 	macosx.o \
 	misc.o \
-	io.o
+	io.o \
+	3dtools.o
 
 VX2_TESTS := surface_unittest.o \
 	  misc_unittest.o \
-	  io_unittest.o
+	  io_unittest.o \
+	  3dtools_unittest.o  
 
 #corresponding list of source files; needed for dependency building with g++
 VX2_SRC := ../../src/v3tools.cpp \

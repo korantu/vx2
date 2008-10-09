@@ -91,122 +91,13 @@ void FastVolume::undo(){
 	   };
 	};
 };
-
+ 
 void FastVolume::undo_reset(){
 	undo_info.clear();
 };
-/*
 
-///undo stack
-///P - a position
-///A - action
-/// stack's last item is an action. 
-/// when we want to store a part of undo action,
-/// the last part is popped out.
 std::vector<int> undo_buffer;
 
-/// eraze an element from a list. (TODO: check if it can be replaced with a standard STL algorithm)
-inline bool erase_element(std::vector<int> & where, int what){
-  for(std::vector<int>::iterator i = where.begin(); i != where.end(); i++){
-    if(what == *i){
-      where.erase( i);
-      return true;
-    };
-  };
-
-  return false;
-};
-
-*/
-/*
-
-//query if the following thing is an action or a position
-bool FastVolume::is_action(int in){
-	return ((in >= 0) && (in < (int)MAX_ACTION));
-};
-
-void FastVolume::undo_action(){
-  if(undo_buf.size() == 0)return;
-  //	assert(is_action(undo_buffer_multi.back()));
-  int pos; //current position; last one is an action.
-  std::vector<int> list;
-  
-  //search until an action.
-  while(undo_buf.size() > 0){
-    pos = undo_buf.back();
-    undo_buf.pop_back();
-    if(is_action(pos)){ //ok, found what to do;
-      break; 
-    }else{              //not action yet; just remember it
-      list.push_back(pos); //remember
-    };
-  };
-  
-  int cur; //current point 
-  int cur_nbr; //current neighbour
-  int i;
-
-  for(std::vector<int>::iterator j = list.begin(); j != list.end(); j++){
-    cur = *j;
-	switch(pos){
-
-	case ADD_MASK: //need to remove mask
-    if(BDR & mask[cur]){ //possibly marked
-		while(erase_element(markers, cur)){}; //make sure it is not in the markers 
-    }
-    mask[cur] -= (mask[cur] & MASK); //clear the thing itself
-    
-    for(i = 0; i < 6; i++){
-      cur_nbr = cur+neighbours[i];
-      if((MSK & mask[cur_nbr]) && !(BDR & mask[cur_nbr])){ //if not marked
-	mask[cur_nbr] |= BDR;     //mark
-	markers.push_back(cur_nbr);
-	  };
-	};
-	case ADD_TRU:
-      mask[cur] -= TRU & mask[cur];
-      break;
-
-
-    case KILL_TRU:
-      mask[cur] |= TRU;
-      break;  
-    };
-  };
-};	
-*/
-
-/*
-// undo.
-void FastVolume::undo(){
-
-  while(undo_buffer.size() && !(undo_buffer.back()))
-    undo_buffer.pop_back();
-
-  int cur;
-  //undo until a zero
-  while(undo_buffer.size() && undo_buffer.back()){
-    cur = undo_buffer.back();
-    undo_buffer.pop_back();
-    if(BDR & mask[cur]){ //possibly marked
-		while(erase_element(markers, cur)){}; //make sure it is not in the markers 
-    }
-    mask[cur] -= (mask[cur] & MASK); //clear the thing itself
-    
-    for(int i = 0; i < 6; i++){
-      int cur_nbr = cur+neighbours[i];
-      if((MSK & mask[cur_nbr]) && !(BDR & mask[cur_nbr])){ //if not marked
-	mask[cur_nbr] |= BDR;     //mark
-	markers.push_back(cur_nbr);
-      };
-    };
-
-  };
-  
-
-};
-
-*/
 FastVolume::FastVolume()
 {
   vol = new t_vox[n_voxels]; 
@@ -214,8 +105,6 @@ FastVolume::FastVolume()
   depth = new unsigned char [n_voxels];
   
   use_scope = false;
-
-  if((!vol) || (!mask) || (!depth)) throw "Out of memory\n";
 
   reset();
 };
@@ -774,5 +663,14 @@ void FastVolume::downshift(int flags = MASK){
 };
 */
 
+
+
+void FastVolume::Set(int x, int y, int z, short data){
+  vol[getOffset(x,y,z)] = data;
+};
+
+short FastVolume::Get( int x, int y, int z) const{
+  return vol[getOffset(x ,y, z)];
+};
 
 

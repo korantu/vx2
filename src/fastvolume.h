@@ -135,6 +135,9 @@ class FastVolume {
   void undo();
   void undo_reset();
 
+  void Set(int x, int y, int z, short data);
+  short Get( int x, int y, int z) const;
+
 };
 
 

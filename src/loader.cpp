@@ -1,6 +1,11 @@
-#include "loader.h"
+#include <gtest/gtest.h>
+
 #include <zlib.h>
 #include <stdlib.h>
+
+#include "loader.h"
+
+
 
 //_* Exception handling
 Loader::Ex::Ex(std::string why): reason(why){};
@@ -316,9 +321,172 @@ void Loader::parse(raw data, FastVolume & result, bool read){
       };
   };
 };
+
+bool MgzSanityCheck(MgzLoader::Header & header){
+  return (header.width < 1000) && (header.width > 10) &&
+    (header.height < 1000) && (header.width > 10) &&
+    (header.depth < 1000) && (header.width > 10);
+};
+
+bool MgzReadHeader(Io & io, MgzLoader::Header * header){
+  const int UNUSED_SPACE_SIZE = 256;
+  const int USED_SPACE_SIZE   = (3*sizeof(float)+4*3*sizeof(float));
+  int unused_space_size = UNUSED_SPACE_SIZE-sizeof(short) ;
+
+  int   width, height, depth, nframes, x, y, z, dof;
+    short good_ras_flag;
+
+  float  xsize, ysize, zsize, x_r, x_a, x_s, y_r, y_a, y_s;
+  float z_r, z_a, z_s, c_r, c_a, c_s ;
+
+  int nread;
+
+  xsize = ysize = zsize = 0;
+  x_r = x_a = x_s = 0;
+  y_r = y_a = y_s = 0;
+  z_r = z_a = z_s = 0;
+  c_r = c_a = c_s = 0;
+
+  printf("reading basic info\n");
+  io.GetInt(&nread);
+  if (!nread) return false;
+
+  io.GetInt(&header->width).GetInt(&header->height)
+    .GetInt(&header->depth).GetInt(&nframes);
+  header->data_type = (MgzLoader::DataType)io.GetInt();
+  io.GetInt(&dof);
+
+  printf("whdntd: %d %d %d\n", header->width, header->height, header->depth);
+
+
+  io.GetShort(&good_ras_flag);
+  if (good_ras_flag > 0){     /* has RAS and voxel size info */
+    unused_space_size -= USED_SPACE_SIZE ;
+    io.GetFloat(&xsize).GetFloat(&ysize).GetFloat(&zsize);
+
+    printf("xyz-size:%f %f %f\n", xsize, ysize, zsize);
+
+    io.GetFloat(&x_r).GetFloat(&x_a).GetFloat(&x_s)
+      .GetFloat(&y_r).GetFloat(&y_a).GetFloat(&y_s)
+      .GetFloat(&z_r).GetFloat(&z_a).GetFloat(&z_s)
+      .GetFloat(&c_r).GetFloat(&c_a).GetFloat(&c_s);
   
+  printf("R: x(%f) y(%f) z(%f) c(%f)\n", x_r, y_r, z_r, c_r);
+  printf("A: x(%f) y(%f) z(%f) c(%f)\n", x_a, y_a, z_a, c_a);
+  printf("S: x(%f) y(%f) z(%f) c(%f)\n", x_s, y_s, z_s, c_s);
+  };
+
+  io.set_position(io.get_position() + unused_space_size);
+
+  int cur_data;
+
+  return io && MgzSanityCheck(*header);
+}; 
+
+bool MgzRead(Io & io, const MgzLoader::Header & header, FastVolume * volume){
+  for (int z = 0 ; z < header.depth ; ++z){
+    for (int y = header.height-1 ; y >=0 ; --y){
+      for (int x = 0 ; x < header.width ; ++x){
+	switch (header.data_type){
+	  case MgzLoader::INT: volume->Set(x,y,z, (short)io.GetInt()); break;
+	  case MgzLoader::SHORT: volume->Set(x,y,z,io.GetShort()); break;
+	  case MgzLoader::UCHAR: volume->Set(x,y,z, (short)io.GetChar()); break;
+	  case MgzLoader::FLOAT: volume->Set(x,y,z, (short)io.GetFloat()); break;
+	  default: return false;
+	};
+      };
+    };
+  };
+  return io.valid();
+};
+
+bool MgzWrite(Io & io, 
+const MgzLoader::Header & header, 
+const FastVolume & volume){
+  for (int z = 0 ; z < header.depth ; ++z){
+    for (int y = header.height-1 ; y >=0 ; --y){
+      for (int x = 0 ; x < header.width ; ++x){
+	switch (header.data_type){
+	  case MgzLoader::INT: io.PutInt(volume.Get(x,y,z)); break;
+	  case MgzLoader::SHORT: io.PutShort(volume.Get(x,y,z)); break;
+	  case MgzLoader::UCHAR: io.PutChar(volume.Get(x,y,z)); break;
+	  case MgzLoader::FLOAT: io.PutFloat(volume.Get(x,y,z)); break;
+	  default: return false;};
+      };
+    };
+  };
+  return io.valid();
+};
+
+TEST(Mri, Header){
+  Io in(ReadGzipFile("brainmask.mgz"));
+  MgzLoader::Header header;
+  EXPECT_TRUE(MgzReadHeader(in, &header));
+  ASSERT_TRUE(MgzSanityCheck(header));
+  EXPECT_EQ(256, header.width);
+  EXPECT_EQ(256, header.height);
+  EXPECT_EQ(256, header.depth);
+};
 
 
 
+/// Clean implementation of loading/saving MGZ files.
 
+MgzLoader::MgzLoader(FastVolume & volume): volume_(volume) {
+};
+
+MgzLoader::~MgzLoader(){
+};
+
+MgzLoader & MgzLoader::Save( std::string file_name){
+  file_name_ = file_name;
+  Io io(file_content_);
+  if(!MgzReadHeader(io, &header_)){valid(false); return * this;};
+  if(!MgzWrite(io, header_, volume_)){valid(false); return * this;};
+  file_content_ = io.content();
+  valid(WriteGzipFile(file_name_, file_content_));
+  return * this;
+};
+
+MgzLoader & MgzLoader::Load( std::string file_name){
+  file_name_ = file_name;
+  file_content_ = ReadGzipFile(file_name_);
+  Io io(file_content_);
+  if(!MgzReadHeader(io, &header_)){valid(false); return * this;};
+  if(!MgzRead(io, header_, &volume_)){valid(false); return * this;};
+  valid(io.valid());
+  return * this;
+};
+
+
+TEST(Mri, Read){
+  FastVolume volume;
+  FastVolume volume_two;
+  MgzLoader::Header header;
+  Io io(ReadGzipFile("brainmask.mgz"));
+  ASSERT_TRUE(MgzReadHeader(io, &header));
+  EXPECT_TRUE(MgzRead(io, header, &volume));
+  volume.Set(45,65,54, 3);
+  io.rewind();
+  ASSERT_TRUE(MgzReadHeader(io, &header));
+  EXPECT_TRUE(MgzWrite(io, header, volume));
+  io.rewind();
+  ASSERT_TRUE(MgzReadHeader(io, &header));
+  EXPECT_TRUE(MgzRead(io, header, &volume_two));
+  EXPECT_EQ(volume.Get(45,65,54), volume_two.Get(45,65,54));
+};
+
+
+
+TEST(Mri, ReadOriginal){
+  FastVolume volume;
+  FastVolume volume_two;
+  Loader loader;
+  loader.read("brainmask.mgz");
+  loader.read_volume(volume);
+  volume.Set(45,65,54, 3);
+  loader.write_volume(volume);
+  loader.read_volume(volume_two);
+  EXPECT_EQ(volume.Get(45,65,54), volume_two.Get(45,65,54));
+};
 
