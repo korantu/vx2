@@ -53,16 +53,15 @@ T ReadDirectly(Io & in){
 //Parametrized function to write different types using IO.
 template<class T> 
 Io & Write(Io & in, T * result){
+  //Extend the string if current position is exactly at the end.
+  if (in.get_position() == in.size()) //Append string of spaces.
+    in.content_ += string (4, ' '); 
   
-  if ((in.size() - in.get_position()) > sizeof(*result)) { //Replace.
+  if ((in.size() - in.get_position()) >= sizeof(*result)) { //Replace.
     for (int i = 0; i < sizeof(*result); i++){ //Copy bytes.
       in.content_[in.get_position() + sizeof(*result) - i - 1] = 
 	((char *)result)[i];
     };
-    in.position_ += sizeof(*result); // Updating position.
-  } else if (in.get_position() == in.size()) { //Append.
-    in.content_ += 
-      string ((char *) result, sizeof(*result));
     in.position_ += sizeof(*result); // Updating position.
   } else { //Too little space to replace and not appending; Error.
     in.valid(false);

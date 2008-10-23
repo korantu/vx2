@@ -22,7 +22,8 @@ VX2 := navigator.o \
 VX2_TESTS := surface_unittest.o \
 	  misc_unittest.o \
 	  io_unittest.o \
-	  3dtools_unittest.o  
+	  3dtools_unittest.o \
+	  fastvolume_unittest.o
 
 #corresponding list of source files; needed for dependency building with g++
 VX2_SRC := ../../src/v3tools.cpp \

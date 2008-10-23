@@ -74,6 +74,7 @@ struct main_module : public gl_wrapper_reciever {
     };
   } proj;
 
+
   bool load(char * in){ 
     render_required = true;
     return volume.load("brainmask.mgh"); 

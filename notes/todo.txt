@@ -1,3 +1,22 @@
-Write more surface tests;
-Make timings;
-Write IO properly; It is horrible at the moment.
+--Write more surface tests;
+--Make timings;
+--Write IO properly; It is horrible at the moment.
+
+goals:
+  - make nicer graphics => not exactly sure what kind of graphics is
+  required => the easier it is to try new graphics the more new
+  pictures I can get.
+
+  - tests are the correct approach, the cleaner things are, the better
+    chances I can do something here.
+
+  - try to make things as thin as possible:
+      assume we have opengl.
+      assume we can draw a scene.
+      assume we know how to prepare the screen.     
+
+  ortogonal tasks for opengl:
+    initialize 
+    perform loop
+    initialize rotations
+

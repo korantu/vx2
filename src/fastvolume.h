@@ -82,6 +82,9 @@ class FastVolume {
 
   static const int n_voxels = dim*dim*dim;
 
+  //cell corners
+  static const int corners[8];// = { 0, dx, dy, dx+dy, dz, dx+dz, dy+dz, dx + dy + dz };
+
   //6 first are 6-connected.
   static const int neighbours[26];// = {dx, -dx, dy, -dy, dz, -dz};
 
@@ -91,12 +94,19 @@ class FastVolume {
     return x+(y<<8)+(z<<16);
   };
 
+  inline int SampleInt(int x, int y, int z){
+    return(vol[getOffset(x,y,z)]);
+  };
+
   /* Calculate separate coords from offset */
   static inline void getCoords(int off, int &x, int &y, int &z){
     x=off & 0xff;
     y=(off & 0xff00)>>8;
     z=(off & 0xff0000)>>16;
   };
+
+  float FastVolume::Sample(float x_in, float y_in, float z_in);
+
 
   /* Copy data from linear volume to current one.
      Takes a volume of x*y*z array and loads it into the 256*256*256 volume */

@@ -18,6 +18,10 @@ const int FastVolume::neighbours[26] = {
   -dx-dy-dz
 };
 
+const int FastVolume::corners[8] = {
+  0,  dx,      dy,      dx+dy, 
+  dz, dx + dz, dy + dz, dx+dy + dz };
+
 /***
 UNDO, version 3.
 Simply record modification verbatim;
@@ -441,6 +445,37 @@ void FastVolume::set_band(){
 	// go around same points and plan the move
 	printf("band: half:%f, center:%f\n",  half_band_size, band_center);
 
+};
+
+//Well-writen first;
+float FastVolume::Sample(float x_in, float y_in, float z_in){
+  // Least possible corner.
+  float ox = floorf(x_in);
+  float oy = floorf(y_in);
+  float oz = floorf(z_in);
+
+  // Offset of that corner.
+  int offset = getOffset((int)ox, (int)oy, (int)oz);
+
+  // Coordinates inside the cell; [1 0]
+  float x = x_in - ox;
+  float y = y_in - oy;
+  float z = z_in - oz;
+
+  // 1-x coordinates;
+  float X = 1-x;
+  float Y = 1-y;
+  float Z = 1-z;
+  
+  return 
+    Z*(vol[offset+corners[0]]*X*Y+
+       vol[offset+corners[1]]*x*Y+
+       vol[offset+corners[2]]*X*y+
+       vol[offset+corners[3]]*x*y)+
+    z*(vol[offset+corners[4]]*X*Y+
+       vol[offset+corners[5]]*x*Y+
+       vol[offset+corners[6]]*X*y+
+       vol[offset+corners[7]]*x*y);
 };
 
 void FastVolume::propagate_spread(int threshold, int dist, int max_depth, int times){

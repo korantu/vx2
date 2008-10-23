@@ -14,6 +14,10 @@ using namespace std;
 
 //data structures
 
+struct Kern{
+  float samples[5];
+};
+
 /** 
  A simple surface representation 
 */
@@ -32,7 +36,7 @@ void unmark(Surface &, V3f where, float radius);
 void clear(Surface &);
 
 int surface_tris(Surface &);
-void surface_points(int n, int &, int &, int &);
+void surface_points ( int n , int & , int & , int & );
 /// sort triangles in a direction
 void surface_sort(V3f direction);
 
