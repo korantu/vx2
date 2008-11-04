@@ -1,6 +1,5 @@
 --Write more surface tests;
---Make timings;
---Write IO properly; It is horrible at the moment.
+
 
 goals:
   - make nicer graphics => not exactly sure what kind of graphics is
@@ -20,3 +19,4 @@ goals:
     perform loop
     initialize rotations
 
+-- Try and integrate JUCE 
